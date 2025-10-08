@@ -1,0 +1,47 @@
+image: node:20-alpine
+
+stages:
+  - lint
+  - test
+  - build
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules/
+    - .next/cache/
+
+before_script:
+  - npm ci
+
+lint:
+  stage: lint
+  script:
+    - npm run lint
+  only:
+    - main
+    - merge_requests
+
+test:
+  stage: test
+  script:
+    - npm run test
+  coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
+  only:
+    - main
+    - merge_requests
+
+build:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - .next/
+    expire_in: 1 week
+  only:
+    - main
+    - merge_requests
+

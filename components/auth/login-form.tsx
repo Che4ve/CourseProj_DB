@@ -25,8 +25,8 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Вход</CardTitle>
-        <CardDescription>Войдите в свой аккаунт для отслеживания привычек</CardDescription>
+        <CardTitle className="text-2xl font-bold">Вход</CardTitle>
+        <CardDescription>Войдите в свой аккаунт</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-4">

@@ -37,12 +37,11 @@ describe('HabitCard', () => {
     expect(screen.getByText(/плохая/i)).toBeInTheDocument()
   })
 
-  it('has tracker, edit and delete buttons', () => {
+  it('has tracker button and menu', () => {
     render(<HabitCard habit={mockHabit} completions={mockCompletions} />)
     
     expect(screen.getByRole('button', { name: /трекинг/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /изменить/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /удалить/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '⋮' })).toBeInTheDocument()
   })
 
   it('displays streak when completions exist', () => {

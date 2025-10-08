@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useOptimistic, useState, useTransition } from 'react'
 import { HabitCompletion } from '@/lib/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toggleCompletion } from '@/app/actions/completions'
@@ -15,14 +15,28 @@ export function HabitTracker({ habitId, completions }: HabitTrackerProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const dates = getLast14Days()
-  const completionDates = new Set(completions.map(c => c.completed_at))
+  const [optimisticCompletions, setOptimisticCompletions] = useOptimistic(
+    new Set(completions.map(c => c.completed_at)),
+    (state: Set<string>, action: { date: string }) => {
+      const next = new Set(state)
+      if (next.has(action.date)) {
+        next.delete(action.date)
+      } else {
+        next.add(action.date)
+      }
+      return next
+    }
+  )
 
   function handleToggle(date: string) {
     setError(null)
+    setOptimisticCompletions({ date })
     startTransition(async () => {
       const result = await toggleCompletion(habitId, date)
       if (result?.error) {
         setError(result.error)
+        // откатываем оптимизм
+        setOptimisticCompletions({ date })
       }
     })
   }
@@ -32,7 +46,7 @@ export function HabitTracker({ habitId, completions }: HabitTrackerProps) {
       {error && <div className="text-sm text-red-500">{error}</div>}
       <div className="space-y-2">
         {dates.map((date) => {
-          const isCompleted = completionDates.has(date)
+          const isCompleted = optimisticCompletions.has(date)
           return (
             <div
               key={date}

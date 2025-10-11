@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Habit, HabitCompletion } from '@/lib/typeDefinitions';
+import type { Habit, HabitCompletion } from '@/lib/typeDefinitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -22,7 +23,7 @@ import { HabitForm } from './HabitForm';
 import { HabitTracker } from './HabitTracker';
 import { deleteHabit } from '@/app/actions/habitActions';
 import { calculateStreak } from '@/lib/utils/dateUtils';
-import { LucideCalendar, LucideCalendar1, LucideChartBar, TrainTrackIcon } from 'lucide-react';
+import { LucideCalendar } from 'lucide-react';
 
 interface HabitCardProps {
   habit: Habit;
@@ -33,14 +34,33 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [trackerOpen, setTrackerOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [trackerPending, setTrackerPending] = useState(false);
 
   const streak = calculateStreak(completions.map((c) => c.completed_at));
+
+  // Обработчик для попытки закрыть модалку трекера
+  const handleTrackerOpenChange = (open: boolean) => {
+    // Если пытаемся закрыть, но есть pending операции - предупреждаем
+    if (!open && trackerPending) {
+      const confirmClose = confirm(
+        'Изменения еще сохраняются. Закрыть окно? Несохраненные изменения могут быть потеряны.'
+      );
+      if (!confirmClose) return;
+    }
+    setTrackerOpen(open);
+  };
 
   async function handleDelete() {
     if (!confirm('Вы уверены, что хотите удалить эту привычку?')) return;
 
     setDeleting(true);
-    await deleteHabit(habit.id);
+    try {
+      await deleteHabit(habit.id);
+    } catch (err) {
+      console.error('Ошибка при удалении привычки:', err);
+      alert(err instanceof Error ? err.message : 'Не удалось удалить привычку');
+      setDeleting(false);
+    }
   }
 
   return (
@@ -83,17 +103,29 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <Dialog open={trackerOpen} onOpenChange={setTrackerOpen}>
+        <Dialog open={trackerOpen} onOpenChange={handleTrackerOpenChange}>
           <DialogTrigger asChild>
             <Button variant="outline" className="w-full">
               <LucideCalendar /> Трекинг
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className={trackerPending ? 'pointer-events-auto' : ''}>
             <DialogHeader>
-              <DialogTitle>{habit.name}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">{habit.name}</DialogTitle>
             </DialogHeader>
-            <HabitTracker habitId={habit.id} completions={completions} />
+            <HabitTracker
+              habitId={habit.id}
+              completions={completions}
+              onPendingChange={setTrackerPending}
+            />
+            <DialogFooter>
+              {trackerPending && (
+                <div className="text-sm text-blue-600 p-2 bg-blue-50 rounded border border-blue-200 flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
+                  Сохранение изменений...
+                </div>
+              )}
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

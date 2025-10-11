@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { createHabit, updateHabit } from '@/app/actions/habitActions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { Habit, HabitType } from '@/lib/typeDefinitions';
+import type { Habit, HabitType } from '@/lib/typeDefinitions';
 
 interface HabitFormProps {
   habit?: Habit;
@@ -16,27 +16,31 @@ export function HabitForm({ habit, onSuccess }: HabitFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState<HabitType>(habit?.type || 'good');
+  const nameId = useId();
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
 
-    const result = habit ? await updateHabit(habit.id, formData) : await createHabit(formData);
-
-    if (result?.error) {
-      setError(result.error);
-      setLoading(false);
-    } else {
+    try {
+      if (habit) {
+        await updateHabit(habit.id, formData);
+      } else {
+        await createHabit(formData);
+      }
       onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Произошла ошибка');
+      setLoading(false);
     }
   }
 
   return (
     <form action={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name">Название привычки</Label>
+        <Label htmlFor={nameId}>Название привычки</Label>
         <Input
-          id="name"
+          id={nameId}
           name="name"
           type="text"
           placeholder="Например: Пробежка утром"

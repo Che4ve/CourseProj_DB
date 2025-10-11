@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import type { HabitCompletion } from '@/lib/typeDefinitions';
 
@@ -28,7 +28,13 @@ export async function getCompletions(habitId: string) {
   return data as HabitCompletion[];
 }
 
-export async function toggleCompletion(habitId: string, date: string) {
+/**
+ * Идемпотентное действие установки статуса выполнения привычки.
+ * @param habitId - ID привычки
+ * @param date - Дата в формате YYYY-MM-DD
+ * @param completed - true для установки выполнения, false для удаления
+ */
+export async function setCompletion(habitId: string, date: string, completed: boolean) {
   const supabase = await createClient();
 
   const {
@@ -36,47 +42,43 @@ export async function toggleCompletion(habitId: string, date: string) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Не авторизован' };
+    throw new Error('Не авторизован');
   }
 
-  // Check if habit belongs to user
-  const { data: habit } = await supabase
-    .from('habits')
-    .select('id')
-    .eq('id', habitId)
-    .eq('user_id', user.id)
-    .single();
-
-  if (!habit) {
-    return { error: 'Привычка не найдена' };
+  // Валидация формата даты (YYYY-MM-DD)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error('Неверный формат даты');
   }
 
-  // Check if completion already exists
-  const { data: existing } = await supabase
-    .from('habit_completions')
-    .select('id')
-    .eq('habit_id', habitId)
-    .eq('completed_at', date)
-    .single();
-
-  if (existing) {
-    // Delete completion
-    const { error } = await supabase.from('habit_completions').delete().eq('id', existing.id);
-
-    if (error) {
-      return { error: error.message };
-    }
-  } else {
-    // Create completion
+  if (completed) {
+    // Используем upsert для идемпотентности
+    // onConflict указывает колонки для проверки дубликатов
+    // ignoreDuplicates: true означает что при совпадении не будет ошибки
     const { error } = await supabase
       .from('habit_completions')
-      .insert([{ habit_id: habitId, completed_at: date }]);
+      .upsert(
+        { habit_id: habitId, completed_at: date },
+        { onConflict: 'habit_id, completed_at', ignoreDuplicates: true }
+      );
 
     if (error) {
-      return { error: error.message };
+      // RLS политика автоматически проверит, что привычка принадлежит пользователю
+      throw new Error(error.message);
+    }
+  } else {
+    // Удаляем запись, если она существует
+    const { error } = await supabase
+      .from('habit_completions')
+      .delete()
+      .eq('habit_id', habitId)
+      .eq('completed_at', date);
+
+    if (error) {
+      throw new Error(error.message);
     }
   }
 
-  revalidatePath('/');
-  return { success: true };
+  // Точечная инвалидация кэша для конкретной привычки
+  revalidateTag(`habit-${habitId}`);
+  revalidateTag('habits-list');
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getHabits, createHabit, updateHabit, deleteHabit } from '@/app/actions/habits';
+import { getHabits, createHabit, updateHabit, deleteHabit } from '@/app/actions/habitActions';
 
 const mockSupabaseClient = {
   auth: {
@@ -13,7 +13,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 describe('Habits Actions', () => {
@@ -73,22 +73,34 @@ describe('Habits Actions', () => {
       formData.append('name', 'New Habit');
       formData.append('type', 'good');
 
-      const result = await createHabit(formData);
+      await createHabit(formData);
 
-      expect(result).toEqual({ success: true });
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('habits');
+      expect(mockInsert).toHaveBeenCalledWith([
+        { user_id: 'user1', name: 'New Habit', type: 'good' },
+      ]);
     });
 
-    it('should return error when fields are missing', async () => {
+    it('should throw error when fields are missing', async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: 'user1' } },
       });
 
       const formData = new FormData();
 
-      const result = await createHabit(formData);
+      await expect(createHabit(formData)).rejects.toThrow('Заполните все поля');
+    });
 
-      expect(result).toEqual({ error: 'Заполните все поля' });
+    it('should throw error when user is not authenticated', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+      });
+
+      const formData = new FormData();
+      formData.append('name', 'New Habit');
+      formData.append('type', 'good');
+
+      await expect(createHabit(formData)).rejects.toThrow('Не авторизован');
     });
   });
 
@@ -99,9 +111,7 @@ describe('Habits Actions', () => {
       });
 
       const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
+        eq: vi.fn().mockResolvedValue({ error: null }),
       });
       mockSupabaseClient.from.mockReturnValue({ update: mockUpdate });
 
@@ -109,9 +119,22 @@ describe('Habits Actions', () => {
       formData.append('name', 'Updated Habit');
       formData.append('type', 'bad');
 
-      const result = await updateHabit('1', formData);
+      await updateHabit('1', formData);
 
-      expect(result).toEqual({ success: true });
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('habits');
+      expect(mockUpdate).toHaveBeenCalledWith({ name: 'Updated Habit', type: 'bad' });
+    });
+
+    it('should throw error when user is not authenticated', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+      });
+
+      const formData = new FormData();
+      formData.append('name', 'Updated Habit');
+      formData.append('type', 'bad');
+
+      await expect(updateHabit('1', formData)).rejects.toThrow('Не авторизован');
     });
   });
 
@@ -122,16 +145,22 @@ describe('Habits Actions', () => {
       });
 
       const mockDelete = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
+        eq: vi.fn().mockResolvedValue({ error: null }),
       });
       mockSupabaseClient.from.mockReturnValue({ delete: mockDelete });
 
-      const result = await deleteHabit('1');
+      await deleteHabit('1');
 
-      expect(result).toEqual({ success: true });
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('habits');
+      expect(mockDelete).toHaveBeenCalled();
+    });
+
+    it('should throw error when user is not authenticated', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+      });
+
+      await expect(deleteHabit('1')).rejects.toThrow('Не авторизован');
     });
   });
 });

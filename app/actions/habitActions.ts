@@ -1,8 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { Habit, HabitType } from '@/lib/typeDefinitions';
+import type { Habit, HabitType } from '@/lib/typeDefinitions';
 
 export async function getHabits() {
   const supabase = await createClient();
@@ -36,24 +36,24 @@ export async function createHabit(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Не авторизован' };
+    throw new Error('Не авторизован');
   }
 
   const name = formData.get('name') as string;
   const type = formData.get('type') as HabitType;
 
   if (!name || !type) {
-    return { error: 'Заполните все поля' };
+    throw new Error('Заполните все поля');
   }
 
+  // RLS политика автоматически проверит user_id
   const { error } = await supabase.from('habits').insert([{ user_id: user.id, name, type }]);
 
   if (error) {
-    return { error: error.message };
+    throw new Error(error.message);
   }
 
-  revalidatePath('/');
-  return { success: true };
+  revalidateTag('habits-list');
 }
 
 export async function updateHabit(id: string, formData: FormData) {
@@ -64,28 +64,26 @@ export async function updateHabit(id: string, formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Не авторизован' };
+    throw new Error('Не авторизован');
   }
 
   const name = formData.get('name') as string;
   const type = formData.get('type') as HabitType;
 
   if (!name || !type) {
-    return { error: 'Заполните все поля' };
+    throw new Error('Заполните все поля');
   }
 
-  const { error } = await supabase
-    .from('habits')
-    .update({ name, type })
-    .eq('id', id)
-    .eq('user_id', user.id);
+  // RLS политика автоматически проверит, что привычка принадлежит пользователю
+  // Не нужно явно проверять user_id в WHERE - RLS сделает это за нас
+  const { error } = await supabase.from('habits').update({ name, type }).eq('id', id);
 
   if (error) {
-    return { error: error.message };
+    throw new Error(error.message);
   }
 
-  revalidatePath('/');
-  return { success: true };
+  revalidateTag('habits-list');
+  revalidateTag(`habit-${id}`);
 }
 
 export async function deleteHabit(id: string) {
@@ -96,15 +94,16 @@ export async function deleteHabit(id: string) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Не авторизован' };
+    throw new Error('Не авторизован');
   }
 
-  const { error } = await supabase.from('habits').delete().eq('id', id).eq('user_id', user.id);
+  // RLS политика автоматически проверит, что привычка принадлежит пользователю
+  const { error } = await supabase.from('habits').delete().eq('id', id);
 
   if (error) {
-    return { error: error.message };
+    throw new Error(error.message);
   }
 
-  revalidatePath('/');
-  return { success: true };
+  revalidateTag('habits-list');
+  revalidateTag(`habit-${id}`);
 }

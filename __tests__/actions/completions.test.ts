@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getCompletions, toggleCompletion } from '@/app/actions/completions';
+import { getCompletions, setCompletion } from '@/app/actions/completionActions';
 
 const mockSupabaseClient = {
   auth: {
@@ -13,7 +13,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 describe('Completions Actions', () => {
@@ -52,103 +52,72 @@ describe('Completions Actions', () => {
     });
   });
 
-  describe('toggleCompletion', () => {
-    it('should create completion when it does not exist', async () => {
+  describe('setCompletion', () => {
+    it('should create completion using upsert when completed is true', async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: 'user1' } },
       });
 
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: { id: 'habit1' }, error: null }),
-          }),
-        }),
-      });
+      const mockUpsert = vi.fn().mockResolvedValue({ error: null });
 
-      const mockInsert = vi.fn().mockResolvedValue({ error: null });
+      mockSupabaseClient.from.mockReturnValue({ upsert: mockUpsert });
 
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'habits') {
-          return { select: mockSelect };
-        }
-        if (table === 'habit_completions') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-      });
+      await setCompletion('habit1', '2024-01-01', true);
 
-      const result = await toggleCompletion('habit1', '2024-01-01');
-
-      expect(result).toEqual({ success: true });
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('habit_completions');
+      expect(mockUpsert).toHaveBeenCalledWith(
+        { habit_id: 'habit1', completed_at: '2024-01-01' },
+        { onConflict: 'habit_id, completed_at', ignoreDuplicates: true }
+      );
     });
 
-    it('should delete completion when it exists', async () => {
+    it('should delete completion when completed is false', async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: 'user1' } },
-      });
-
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: { id: 'habit1' }, error: null }),
-          }),
-        }),
       });
 
       const mockDelete = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
       });
 
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'habits') {
-          return { select: mockSelect };
-        }
-        if (table === 'habit_completions') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: { id: 'completion1' }, error: null }),
-                }),
-              }),
-            }),
-            delete: mockDelete,
-          };
-        }
-      });
+      mockSupabaseClient.from.mockReturnValue({ delete: mockDelete });
 
-      const result = await toggleCompletion('habit1', '2024-01-01');
+      await setCompletion('habit1', '2024-01-01', false);
 
-      expect(result).toEqual({ success: true });
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('habit_completions');
+      expect(mockDelete).toHaveBeenCalled();
     });
 
-    it('should return error when habit does not belong to user', async () => {
+    it('should throw error when user is not authenticated', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+      });
+
+      await expect(setCompletion('habit1', '2024-01-01', true)).rejects.toThrow('Не авторизован');
+    });
+
+    it('should throw error when date format is invalid', async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: 'user1' } },
       });
 
-      const mockSelect = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null, error: null }),
-          }),
-        }),
+      await expect(setCompletion('habit1', 'invalid-date', true)).rejects.toThrow(
+        'Неверный формат даты'
+      );
+    });
+
+    it('should throw error when database operation fails', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'user1' } },
       });
 
-      mockSupabaseClient.from.mockReturnValue({ select: mockSelect });
+      const mockUpsert = vi.fn().mockResolvedValue({ error: { message: 'DB Error' } });
 
-      const result = await toggleCompletion('habit1', '2024-01-01');
+      mockSupabaseClient.from.mockReturnValue({ upsert: mockUpsert });
 
-      expect(result).toEqual({ error: 'Привычка не найдена' });
+      await expect(setCompletion('habit1', '2024-01-01', true)).rejects.toThrow('DB Error');
     });
   });
 });

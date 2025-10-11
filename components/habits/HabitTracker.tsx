@@ -2,9 +2,17 @@
 
 import { useRef, useState, useTransition, useEffect, useOptimistic } from 'react';
 import type { HabitCompletion } from '@/lib/typeDefinitions';
-import { Checkbox } from '@/components/ui/Checkbox';
+import { Button } from '@/components/ui/Button';
 import { setCompletion } from '@/app/actions/completionActions';
-import { getLast14Days, formatDateDisplay } from '@/lib/utils/dateUtils';
+import {
+  formatDate,
+  getToday,
+  getMonthName,
+  getCalendarDays,
+  isToday,
+  isFutureDate,
+} from '@/lib/utils/dateUtils';
+import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 interface HabitTrackerProps {
   habitId: string;
@@ -15,7 +23,11 @@ interface HabitTrackerProps {
 export function HabitTracker({ habitId, completions, onPendingChange }: HabitTrackerProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const dates = getLast14Days();
+
+  // Календарь начинается с текущего месяца
+  const today = new Date();
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
   // useOptimistic: Set of date-strings
   const [optimisticCompletions, applyCompletion] = useOptimistic(
@@ -39,45 +51,48 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
     onPendingChange?.(pendingSet.size > 0 || isPending);
   }, [pendingSet.size, isPending, onPendingChange]);
 
-  const handleChange = async (date: string, checked: boolean) => {
+  const handleDateClick = async (date: Date) => {
+    const dateStr = formatDate(date);
+    const isCompleted = optimisticCompletions.has(dateStr);
+
     setError(null);
 
     // bump mutation id for this date
-    const id = (lastMutationIdRef.current[date] || 0) + 1;
-    lastMutationIdRef.current[date] = id;
+    const id = (lastMutationIdRef.current[dateStr] || 0) + 1;
+    lastMutationIdRef.current[dateStr] = id;
 
     // 1) Сначала помечаем дату как pending (синхронно, БЕЗ transition!)
-    setPendingSet((prev) => new Set(prev).add(date));
+    setPendingSet((prev) => new Set(prev).add(dateStr));
 
     // 2) Применяем оптимистичное изменение внутри startTransition
     startTransition(() => {
-      applyCompletion({ date, completed: checked });
+      applyCompletion({ date: dateStr, completed: !isCompleted });
     });
 
     // 3) делаем реальную мутацию
     try {
-      await setCompletion(habitId, date, checked);
+      await setCompletion(habitId, dateStr, !isCompleted);
 
       // если это последняя мутация для этой даты — снимаем pending
-      if (lastMutationIdRef.current[date] === id) {
+      if (lastMutationIdRef.current[dateStr] === id) {
         setPendingSet((prev) => {
           const next = new Set(prev);
-          next.delete(date);
+          next.delete(dateStr);
           return next;
         });
       }
     } catch (err) {
       // игнорируем устаревшие ошибки
-      if (lastMutationIdRef.current[date] !== id) return;
+      if (lastMutationIdRef.current[dateStr] !== id) return;
 
       // Откат оптимистичного апдейта + снять pending
       startTransition(() => {
-        applyCompletion({ date, completed: !checked });
+        applyCompletion({ date: dateStr, completed: isCompleted });
       });
 
       setPendingSet((prev) => {
         const next = new Set(prev);
-        next.delete(date);
+        next.delete(dateStr);
         return next;
       });
 
@@ -85,47 +100,138 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
     }
   };
 
+  const handleTodayClick = () => {
+    const todayDate = new Date();
+    handleDateClick(todayDate);
+  };
+
+  const goToPreviousMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    // Не позволяем листать дальше текущего месяца
+    const now = new Date();
+    if (
+      currentYear > now.getFullYear() ||
+      (currentYear === now.getFullYear() && currentMonth >= now.getMonth())
+    ) {
+      return;
+    }
+
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const calendarDays = getCalendarDays(currentYear, currentMonth);
+  const currentMonthDate = new Date(currentYear, currentMonth);
+  const isCurrentMonth = currentYear === today.getFullYear() && currentMonth === today.getMonth();
+
+  const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {error && (
         <div className="text-sm text-red-500 p-2 bg-red-50 rounded border border-red-200">
           {error}
         </div>
       )}
 
-      <div className="space-y-2">
-        {dates.map((date) => {
-          const isCompleted = optimisticCompletions.has(date);
-          const isPendingForDate = pendingSet.has(date);
+      {/* Навигация по месяцам */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="icon" onClick={goToPreviousMonth} className="h-8 w-8">
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        <h3 className="font-semibold text-center capitalize">{getMonthName(currentMonthDate)}</h3>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={goToNextMonth}
+          disabled={isCurrentMonth}
+          className="h-8 w-8"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Календарь */}
+      <div className="grid grid-cols-7 gap-1">
+        {/* Заголовки дней недели */}
+        {weekDays.map((day) => (
+          <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+            {day}
+          </div>
+        ))}
+
+        {/* Дни месяца */}
+        {calendarDays.map((day) => {
+          const dateStr = formatDate(day);
+          const isCompleted = optimisticCompletions.has(dateStr);
+          const isPendingForDate = pendingSet.has(dateStr);
+          const isTodayDate = isToday(day);
+          const isFuture = isFutureDate(day);
+          const isCurrentMonthDay = day.getMonth() === currentMonth;
 
           return (
-            <div
-              key={date}
-              className={`flex items-center justify-between h-10 px-2 rounded-lg transition-colors ${
-                isPendingForDate ? 'bg-blue-50' : 'hover:bg-accent'
-              }`}
+            <button
+              key={dateStr}
+              type="button"
+              onClick={() => !isFuture && handleDateClick(day)}
+              disabled={isFuture || isPendingForDate}
+              className={`
+                aspect-square p-1 rounded-lg text-sm font-medium
+                transition-all duration-200 flex items-center justify-center
+                ${!isCurrentMonthDay ? 'text-muted-foreground/40' : ''}
+                ${isFuture ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'}
+                ${isPendingForDate ? 'cursor-wait animate-pulse' : ''}
+                ${
+                  isCompleted
+                    ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30'
+                    : 'bg-accent hover:bg-accent/80'
+                }
+                ${isTodayDate && !isCompleted ? 'ring-2 ring-primary ring-offset-1' : ''}
+                ${isTodayDate && isCompleted ? 'ring-2 ring-green-500/50 ring-offset-1' : ''}
+                disabled:hover:bg-accent
+              `}
             >
-              <label
-                htmlFor={`completion-${date}`}
-                className={`flex-1 h-full content-center ${
-                  isPendingForDate ? 'cursor-wait opacity-60' : 'cursor-pointer'
-                }`}
-              >
-                {formatDateDisplay(date)}
-              </label>
-
-              <Checkbox
-                id={`completion-${date}`}
-                className={isPendingForDate ? 'cursor-wait' : 'cursor-pointer'}
-                checked={isCompleted}
-                onCheckedChange={(checked) => handleChange(date, checked === true)}
-                // дизейблим конкретную дату в pending
-                disabled={isPendingForDate}
-              />
-            </div>
+              {day.getDate()}
+            </button>
           );
         })}
       </div>
+
+      {/* Большая кнопка "Отметить сегодня" */}
+      <Button
+        onClick={handleTodayClick}
+        disabled={pendingSet.has(getToday())}
+        className="w-full h-12 text-base font-semibold"
+        variant={optimisticCompletions.has(getToday()) ? 'outline' : 'default'}
+      >
+        {pendingSet.has(getToday()) ? (
+          <>
+            <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+            Сохранение...
+          </>
+        ) : optimisticCompletions.has(getToday()) ? (
+          <>
+            <Check className="h-5 w-5 mr-2" />
+            Выполнено сегодня
+          </>
+        ) : (
+          'Отметить сегодня'
+        )}
+      </Button>
     </div>
   );
 }

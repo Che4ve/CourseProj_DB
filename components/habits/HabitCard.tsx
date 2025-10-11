@@ -118,14 +118,6 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
               completions={completions}
               onPendingChange={setTrackerPending}
             />
-            <DialogFooter>
-              {trackerPending && (
-                <div className="text-sm text-blue-600 p-2 bg-blue-50 rounded border border-blue-200 flex items-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                  Сохранение изменений...
-                </div>
-              )}
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 

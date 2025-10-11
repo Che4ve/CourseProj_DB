@@ -1,12 +1,14 @@
-import { Suspense } from 'react'
-import { HabitList } from '@/components/habits/habit-list'
-import { CreateHabitButton } from '@/components/habits/create-habit-button'
-import { LogoutButton } from '@/components/auth/logout-button'
-import { createClient } from '@/lib/supabase/server'
+import { Suspense } from 'react';
+import { HabitList } from '@/components/habits/HabitList';
+import { CreateHabitButton } from '@/components/habits/CreateHabitButton';
+import { LogoutButton } from '@/components/auth/LogoutButton';
+import { createClient } from '@/lib/supabase/server';
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,6 +30,5 @@ export default async function DashboardPage() {
         </Suspense>
       </main>
     </div>
-  )
+  );
 }
-

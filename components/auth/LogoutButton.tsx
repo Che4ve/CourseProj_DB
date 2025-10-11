@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { logout } from '@/app/actions/auth'
-import { Button } from '@/components/ui/button'
+import { logout } from '@/app/actions/authActions';
+import { Button } from '@/components/ui/Button';
 
 export function LogoutButton() {
   return (
@@ -10,6 +10,5 @@ export function LogoutButton() {
         Выход
       </Button>
     </form>
-  )
+  );
 }
-

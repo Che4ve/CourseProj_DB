@@ -1,35 +1,33 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { createHabit, updateHabit } from '@/app/actions/habits'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Habit, HabitType } from '@/lib/types'
+import { useState } from 'react';
+import { createHabit, updateHabit } from '@/app/actions/habitActions';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Habit, HabitType } from '@/lib/typeDefinitions';
 
 interface HabitFormProps {
-  habit?: Habit
-  onSuccess: () => void
+  habit?: Habit;
+  onSuccess: () => void;
 }
 
 export function HabitForm({ habit, onSuccess }: HabitFormProps) {
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [type, setType] = useState<HabitType>(habit?.type || 'good')
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [type, setType] = useState<HabitType>(habit?.type || 'good');
 
   async function handleSubmit(formData: FormData) {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
-    const result = habit
-      ? await updateHabit(habit.id, formData)
-      : await createHabit(formData)
+    const result = habit ? await updateHabit(habit.id, formData) : await createHabit(formData);
 
     if (result?.error) {
-      setError(result.error)
-      setLoading(false)
+      setError(result.error);
+      setLoading(false);
     } else {
-      onSuccess()
+      onSuccess();
     }
   }
 
@@ -76,6 +74,5 @@ export function HabitForm({ habit, onSuccess }: HabitFormProps) {
         {loading ? 'Сохранение...' : habit ? 'Обновить' : 'Создать'}
       </Button>
     </form>
-  )
+  );
 }
-

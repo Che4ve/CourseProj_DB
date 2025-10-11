@@ -1,35 +1,46 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Habit, HabitCompletion } from '@/lib/types'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { HabitForm } from './habit-form'
-import { HabitTracker } from './habit-tracker'
-import { deleteHabit } from '@/app/actions/habits'
-import { calculateStreak } from '@/lib/utils/date'
-import { LucideCalendar, LucideCalendar1, LucideChartBar, TrainTrackIcon } from 'lucide-react'
+import { useState } from 'react';
+import { Habit, HabitCompletion } from '@/lib/typeDefinitions';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/Dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/DropdownMenu';
+import { HabitForm } from './HabitForm';
+import { HabitTracker } from './HabitTracker';
+import { deleteHabit } from '@/app/actions/habitActions';
+import { calculateStreak } from '@/lib/utils/dateUtils';
+import { LucideCalendar, LucideCalendar1, LucideChartBar, TrainTrackIcon } from 'lucide-react';
 
 interface HabitCardProps {
-  habit: Habit
-  completions: HabitCompletion[]
+  habit: Habit;
+  completions: HabitCompletion[];
 }
 
 export function HabitCard({ habit, completions }: HabitCardProps) {
-  const [editOpen, setEditOpen] = useState(false)
-  const [trackerOpen, setTrackerOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [editOpen, setEditOpen] = useState(false);
+  const [trackerOpen, setTrackerOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const streak = calculateStreak(completions.map(c => c.completed_at))
+  const streak = calculateStreak(completions.map((c) => c.completed_at));
 
   async function handleDelete() {
-    if (!confirm('Вы уверены, что хотите удалить эту привычку?')) return
-    
-    setDeleting(true)
-    await deleteHabit(habit.id)
+    if (!confirm('Вы уверены, что хотите удалить эту привычку?')) return;
+
+    setDeleting(true);
+    await deleteHabit(habit.id);
   }
 
   return (
@@ -45,11 +56,13 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
                 <Badge className="bg-rose-100 text-rose-700 border border-rose-200">Плохая</Badge>
               )}
               {streak > 0 && (
-                <Badge variant="outline">🔥 {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}</Badge>
+                <Badge variant="outline">
+                  🔥 {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}
+                </Badge>
               )}
             </div>
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -57,10 +70,8 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                Изменить
-              </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem onClick={() => setEditOpen(true)}>Изменить</DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={handleDelete}
                 disabled={deleting}
                 className="text-rose-600 focus:text-rose-600"
@@ -96,6 +107,5 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
         </Dialog>
       </CardContent>
     </Card>
-  )
+  );
 }
-

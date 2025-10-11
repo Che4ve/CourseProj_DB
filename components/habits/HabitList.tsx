@@ -1,9 +1,9 @@
-import { getHabits } from '@/app/actions/habits'
-import { getCompletions } from '@/app/actions/completions'
-import { HabitCard } from './habit-card'
+import { getHabits } from '@/app/actions/habitActions';
+import { getCompletions } from '@/app/actions/completionActions';
+import { HabitCard } from './HabitCard';
 
 export async function HabitList() {
-  const habits = await getHabits()
+  const habits = await getHabits();
 
   if (habits.length === 0) {
     return (
@@ -11,18 +11,18 @@ export async function HabitList() {
         <p>У вас пока нет привычек</p>
         <p className="text-sm">Создайте первую привычку, чтобы начать трекинг</p>
       </div>
-    )
+    );
   }
 
   const habitsWithCompletions = await Promise.all(
     habits.map(async (habit) => {
-      const completions = await getCompletions(habit.id)
-      return { habit, completions }
+      const completions = await getCompletions(habit.id);
+      return { habit, completions };
     })
-  )
+  );
 
-  const goodHabits = habitsWithCompletions.filter(({ habit }) => habit.type === 'good')
-  const badHabits = habitsWithCompletions.filter(({ habit }) => habit.type === 'bad')
+  const goodHabits = habitsWithCompletions.filter(({ habit }) => habit.type === 'good');
+  const badHabits = habitsWithCompletions.filter(({ habit }) => habit.type === 'bad');
 
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_1px_1fr] items-start">
@@ -67,6 +67,5 @@ export async function HabitList() {
         )}
       </div>
     </div>
-  )
+  );
 }
-

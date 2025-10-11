@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition, useEffect, useOptimistic } from 'react';
 import type { HabitCompletion } from '@/lib/typeDefinitions';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/contexts/ToastContext';
 import { setCompletion } from '@/app/actions/completionActions';
 import {
   formatDate,
@@ -23,6 +24,7 @@ interface HabitTrackerProps {
 export function HabitTracker({ habitId, completions, onPendingChange }: HabitTrackerProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { startOperation, finishOperation } = useToast();
 
   // Календарь начинается с текущего месяца
   const today = new Date();
@@ -64,6 +66,9 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
     // 1) Сначала помечаем дату как pending (синхронно, БЕЗ transition!)
     setPendingSet((prev) => new Set(prev).add(dateStr));
 
+    // Начинаем операцию
+    startOperation();
+
     // 2) Применяем оптимистичное изменение внутри startTransition
     startTransition(() => {
       applyCompletion({ date: dateStr, completed: !isCompleted });
@@ -80,6 +85,9 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
           next.delete(dateStr);
           return next;
         });
+
+        // Завершаем операцию
+        finishOperation();
       }
     } catch (err) {
       // игнорируем устаревшие ошибки
@@ -97,6 +105,8 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
       });
 
       setError(err instanceof Error ? err.message : 'Произошла ошибка');
+      // При ошибке тоже завершаем операцию
+      finishOperation();
     }
   };
 

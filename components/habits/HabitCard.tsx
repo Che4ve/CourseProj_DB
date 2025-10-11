@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { Habit, HabitCompletion } from '@/lib/typeDefinitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -8,7 +9,6 @@ import { Button } from '@/components/ui/Button';
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { HabitForm } from './HabitForm';
 import { HabitTracker } from './HabitTracker';
 import { deleteHabit } from '@/app/actions/habitActions';
@@ -35,30 +36,33 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
   const [trackerOpen, setTrackerOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [trackerPending, setTrackerPending] = useState(false);
+  const [closeTrackerConfirmOpen, setCloseTrackerConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const streak = calculateStreak(completions.map((c) => c.completed_at));
 
   // Обработчик для попытки закрыть модалку трекера
   const handleTrackerOpenChange = (open: boolean) => {
-    // Если пытаемся закрыть, но есть pending операции - предупреждаем
+    // Если пытаемся закрыть, но есть pending операции - показываем диалог подтверждения
     if (!open && trackerPending) {
-      const confirmClose = confirm(
-        'Изменения еще сохраняются. Закрыть окно? Несохраненные изменения могут быть потеряны.'
-      );
-      if (!confirmClose) return;
+      setCloseTrackerConfirmOpen(true);
+      return;
     }
     setTrackerOpen(open);
   };
 
-  async function handleDelete() {
-    if (!confirm('Вы уверены, что хотите удалить эту привычку?')) return;
+  // Подтверждение закрытия трекера
+  const handleConfirmCloseTracker = () => {
+    setTrackerOpen(false);
+  };
 
+  async function handleDelete() {
     setDeleting(true);
     try {
       await deleteHabit(habit.id);
     } catch (err) {
       console.error('Ошибка при удалении привычки:', err);
-      alert(err instanceof Error ? err.message : 'Не удалось удалить привычку');
+      toast.error(err instanceof Error ? err.message : 'Не удалось удалить привычку');
       setDeleting(false);
     }
   }
@@ -92,7 +96,7 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setEditOpen(true)}>Изменить</DropdownMenuItem>
               <DropdownMenuItem
-                onClick={handleDelete}
+                onClick={() => setDeleteConfirmOpen(true)}
                 disabled={deleting}
                 className="text-rose-600 focus:text-rose-600"
               >
@@ -129,6 +133,28 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
             <HabitForm habit={habit} onSuccess={() => setEditOpen(false)} />
           </DialogContent>
         </Dialog>
+
+        <ConfirmDialog
+          open={closeTrackerConfirmOpen}
+          onOpenChange={setCloseTrackerConfirmOpen}
+          title="Закрыть окно трекера?"
+          description="Изменения еще сохраняются. Несохраненные изменения могут быть потеряны."
+          confirmText="Закрыть"
+          cancelText="Отмена"
+          onConfirm={handleConfirmCloseTracker}
+          variant="default"
+        />
+
+        <ConfirmDialog
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+          title="Удалить привычку?"
+          description="Вы уверены, что хотите удалить эту привычку? Это действие нельзя отменить."
+          confirmText="Удалить"
+          cancelText="Отмена"
+          onConfirm={handleDelete}
+          variant="destructive"
+        />
       </CardContent>
     </Card>
   );

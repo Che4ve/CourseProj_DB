@@ -22,7 +22,7 @@ interface HabitTrackerProps {
 }
 
 export function HabitTracker({ habitId, completions, onPendingChange }: HabitTrackerProps) {
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const { startOperation, finishOperation } = useToast();
 
@@ -50,8 +50,8 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
 
   // Уведомляем родителя о состоянии pending
   useEffect(() => {
-    onPendingChange?.(pendingSet.size > 0 || isPending);
-  }, [pendingSet.size, isPending, onPendingChange]);
+    onPendingChange?.(pendingSet.size > 0);
+  }, [pendingSet.size, onPendingChange]);
 
   const handleDateClick = async (date: Date) => {
     const dateStr = formatDate(date);

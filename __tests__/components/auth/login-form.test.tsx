@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
-import { LoginForm } from '@/components/auth/login-form';
+import { LoginForm } from '@/components/auth/LoginForm';
 
 vi.mock('@/app/actions/auth', () => ({
   login: vi.fn(),
@@ -11,8 +10,8 @@ describe('LoginForm', () => {
   it('renders login form with all fields', () => {
     render(<LoginForm />);
 
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/пароль/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/your@email.com/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/••••••••/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /войти/i })).toBeInTheDocument();
   });
 
@@ -26,8 +25,8 @@ describe('LoginForm', () => {
   it('requires email and password fields', () => {
     render(<LoginForm />);
 
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/пароль/i);
+    const emailInput = screen.getByPlaceholderText(/your@email.com/i);
+    const passwordInput = screen.getByPlaceholderText(/••••••••/i);
 
     expect(emailInput).toBeRequired();
     expect(passwordInput).toBeRequired();

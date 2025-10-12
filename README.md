@@ -48,3 +48,16 @@ npm run start        # Запуск production сборки
 npm test             # Запуск тестов
 npm run lint         # Проверка кода
 ```
+
+## GitLab CI/CD
+
+Проект настроен для автоматической проверки и сборки через GitLab CI/CD.
+
+### Настройка переменных окружения в GitLab
+
+Для корректной работы pipeline необходимо настроить переменные окружения:
+
+1. Перейдите в **Settings > CI/CD > Variables** вашего GitLab проекта
+2. Добавьте следующие переменные:
+   - `NEXT_PUBLIC_SUPABASE_URL` - URL вашего Supabase проекта
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Anon/Public ключ Supabase

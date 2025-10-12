@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { signup } from '@/app/actions/authActions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,6 +11,8 @@ import Link from 'next/link';
 export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const emailFieldId = useId();
+  const passwordFieldId = useId();
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -31,9 +33,9 @@ export function SignupForm() {
       <CardContent>
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor={emailFieldId}>Email</Label>
             <Input
-              id="email"
+              id={emailFieldId}
               name="email"
               type="email"
               placeholder="your@email.com"
@@ -42,9 +44,9 @@ export function SignupForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Пароль</Label>
+            <Label htmlFor={passwordFieldId}>Пароль</Label>
             <Input
-              id="password"
+              id={passwordFieldId}
               name="password"
               type="password"
               placeholder="••••••••"

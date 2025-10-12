@@ -1,8 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
-import { HabitForm } from '@/components/habits/habit-form';
-import { Habit } from '@/lib/types';
+import { describe, it, expect, vi } from 'vitest';
+import { HabitForm } from '@/components/habits/HabitForm';
+import type { Habit } from '@/lib/typeDefinitions';
 
 vi.mock('@/app/actions/habits', () => ({
   createHabit: vi.fn(),

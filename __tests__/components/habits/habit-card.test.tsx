@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { HabitCard } from '@/components/habits/habit-card';
-import { Habit, HabitCompletion } from '@/lib/types';
+import { HabitCard } from '@/components/habits/HabitCard';
+import type { Habit, HabitCompletion } from '@/lib/typeDefinitions';
 
 vi.mock('@/app/actions/habits', () => ({
   deleteHabit: vi.fn(),

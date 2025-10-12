@@ -8,5 +8,13 @@
   "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
   "[html]": { "editor.defaultFormatter": "biomejs.biome" },
   "[css]": { "editor.defaultFormatter": "biomejs.biome" },
-  "formattingToggle.affects": ["editor.formatOnSave", "editor.formatOnPaste", "editor.formatOnType"]
+  "formattingToggle.affects": [
+    "editor.formatOnSave",
+    "editor.formatOnPaste",
+    "editor.formatOnType"
+  ],
+  "git.useCommitInputAsStashMessage": true,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true
 }

@@ -1,4 +1,10 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
+
+# Install OpenSSL (required for Prisma) and other deps
+RUN apt-get update && apt-get install -y \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Enable pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.3 --activate

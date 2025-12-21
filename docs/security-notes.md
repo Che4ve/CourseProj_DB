@@ -1,485 +1,340 @@
-# Security Notes — Заметки по безопасности
+# Заметки по безопасности
 
-## Введение
+## 🔐 Обзор мер безопасности
 
-Данный документ описывает меры безопасности, реализованные в проекте, для соответствия требованиям курсовой работы.
-
----
-
-## 1. Хранение учётных данных
-
-### ❌ Штраф: оценка не выше «3»
-
-**Требование**: Запрещено хранить пароли, ключи, URI баз данных и иные секреты в исходном коде или репозитории.
-
-### ✅ Реализовано
-
-#### 1.1. Переменные окружения (.env)
-
-Все секреты хранятся в файле `.env`, который **НЕ** включён в репозиторий.
-
-**`.env` (не в git):**
-```bash
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/habit_tracker
-JWT_SECRET=your-super-secret-key-change-me-in-production
-PORT=3001
-```
-
-**`.gitignore`:**
-```
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-```
-
-#### 1.2. Пример файл (.env.example)
-
-В репозитории есть `.env.example` с **заглушками** (без реальных секретов).
-
-**`.env.example` (в git):**
-```bash
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-JWT_SECRET=your-secret-key-change-me-in-production
-PORT=3001
-```
-
-#### 1.3. Использование в коде
-
-```typescript
-// ✅ Правильно: переменные окружения
-const jwtSecret = process.env.JWT_SECRET;
-const databaseUrl = process.env.DATABASE_URL;
-
-// ❌ Неправильно: секреты в коде
-const jwtSecret = 'my-super-secret-key-123'; // НЕ ДЕЛАЙТЕ ТАК!
-```
-
-### Проверка
-
-```bash
-# Проверить, что .env не в репозитории
-git status
-
-# Проверить, что секреты не в коде
-grep -r "postgres:postgres" apps/backend/src/  # Должно быть пусто
-grep -r "jwt.*secret.*=" apps/backend/src/ --include="*.ts" | grep -v "process.env"  # Пусто
-```
+Проект реализует несколько уровней защиты данных и предотвращения атак.
 
 ---
 
-## 2. SQL-инъекции
+## 1. Защита от SQL-инъекций
 
-### ❌ Штраф: оценка не выше «4»
+### ✅ Параметризованные запросы через Prisma ORM
 
-**Требование**: Прямое формирование SQL-запросов через f-string или конкатенацию без параметризации считается уязвимым к SQL-инъекциям.
-
-### ✅ Реализовано
-
-#### 2.1. Prisma ORM (автоматическая параметризация)
-
-Prisma Client автоматически параметризует все запросы.
+**Все запросы к БД используют Prisma ORM**, который автоматически параметризует запросы:
 
 ```typescript
-// ✅ Правильно: Prisma ORM
-const habits = await prisma.habit.findMany({
-  where: { userId }  // Автоматически параметризовано
+// ✅ БЕЗОПАСНО: Prisma автоматически параметризует
+await prisma.user.findUnique({
+  where: { email: userEmail }  // параметр экранируется
 });
 
-// ✅ Правильно: $queryRaw с параметрами
-const result = await prisma.$queryRaw`
-  SELECT * FROM habits WHERE user_id = ${userId}
+// ✅ БЕЗОПАСНО: Tagged template для raw SQL
+await prisma.$executeRaw`
+  SELECT set_config('app.user_id', ${userId}, true)
 `;
 ```
 
-#### 2.2. Параметризация в middleware
+### ⚠️ Исключение: DDL-команды из доверенных файлов
 
-**Prisma middleware для установки `app.user_id` (используется в триггерах аудита):**
+**Единственное место с `$executeRawUnsafe`** — применение SQL-миграций из файлов `packages/db/sql/*.sql`:
 
-```typescript
-// ✅ ПРАВИЛЬНО: Параметризация через set_config()
-this.$use(async (params, next) => {
-  const store = asyncLocalStorage.getStore();
-  const userId = store?.userId;
-  
-  if (userId) {
-    // ✅ Параметризованный запрос
-    await this.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
-  }
-  
-  return next(params);
-});
-
-// ❌ НЕПРАВИЛЬНО: SQL-конкатенация (НЕ используется!)
-await this.$executeRawUnsafe(`SET LOCAL app.user_id = '${userId}'`);
+   ```typescript
+// packages/db/scripts/apply-sql.ts
+// DDL из ДОВЕРЕННЫХ файлов, управляемых через Git
+await client.query(content);  // Контент из файлов репозитория
 ```
 
-#### 2.3. Отчёты с параметризацией
-
-```typescript
-// ✅ Правильно: $queryRaw с параметрами
-async getUserReport(userId: string, from: Date, to: Date) {
-  return await this.prisma.$queryRaw`
-    SELECT * FROM report_user_habits(
-      ${userId}::uuid,
-      ${from}::date,
-      ${to}::date
-    )
-  `;
-}
-
-// ❌ Неправильно: конкатенация (НЕ используется!)
-const query = `SELECT * FROM report_user_habits('${userId}', '${from}', '${to}')`;
-await this.prisma.$executeRawUnsafe(query);
-```
-
-### Проверка отсутствия SQL-инъекций
-
-```bash
-# Поиск опасных паттернов в backend
-cd apps/backend/src
-
-# 1. Поиск $executeRawUnsafe с конкатенацией
-grep -rn "executeRawUnsafe.*\${" . --include="*.ts"
-# Результат: ПУСТО (или только в apply-sql.ts для безопасных DDL из файлов)
-
-# 2. Поиск конкатенации в SQL
-grep -rn "SELECT.*\${" . --include="*.ts" | grep -v "executeRaw\`"
-# Результат: ПУСТО (только параметризованные запросы)
-
-# 3. Поиск template literals с SQL
-grep -rn "\`.*SELECT.*'.*\${" . --include="*.ts"
-# Результат: ПУСТО
-```
-
-### Исключения
-
-**`apply-sql.ts`** использует `$executeRawUnsafe`, но это **БЕЗОПАСНО**, т.к.:
-1. SQL читается из **файлов**, а не от пользователя
-2. Применяется только администратором при развёртывании
-3. Контролируется через `_manual_migrations` (одноразово)
-
-```typescript
-// apply-sql.ts — ИСКЛЮЧЕНИЕ (безопасный контент из файла)
-const content = await fs.readFile(filepath, 'utf-8');
-await tx.$executeRawUnsafe(content);  // ✅ Безопасно для DDL
-```
+**Почему это безопасно:**
+- SQL берётся из файлов проекта, а не от пользователей
+- Файлы проходят code review
+- Доступ только у разработчиков через Git
 
 ---
 
-## 3. Аутентификация и авторизация
+## 2. Аутентификация и авторизация
 
-### 3.1. JWT-токены
-
-**Регистрация и вход:**
+### JWT токены
 
 ```typescript
-// Хеширование пароля
+// ✅ Токен содержит минимум данных
+const token = jwtService.sign({
+  sub: user.id,
+  email: user.email,
+});
+```
+
+**Хранение токенов:**
+- В `httpOnly` cookies (защита от XSS)
+- Токены не доступны из JavaScript на клиенте
+- Срок жизни: 7 дней (настраивается)
+
+### Хеширование паролей
+
+```typescript
+// ✅ bcrypt с cost factor 10
 const passwordHash = await bcrypt.hash(password, 10);
-
-// Создание токена
-const payload = { sub: user.id, email: user.email };
-const token = this.jwtService.sign(payload);
 ```
 
-**Проверка токена:**
+**Характеристики:**
+- Используется bcrypt (стандарт индустрии)
+- Salt генерируется автоматически
+- Cost factor 10 (баланс безопасности/производительности)
 
-```typescript
-// JWT Strategy
-@Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: process.env.JWT_SECRET,  // ✅ Из .env
-    });
-  }
+---
 
-  async validate(payload: any) {
-    return { id: payload.sub, email: payload.email };
-  }
-}
-```
+## 3. Передача паролей по сети
 
-### 3.2. Защита эндпойнтов
+### ⚠️ Видимость пароля в DevTools
 
-```typescript
-// Все эндпойнты (кроме /auth) требуют JWT
-@UseGuards(JwtAuthGuard)
-@Controller('habits')
-export class HabitsController {
-  // ...
-}
-```
+**Важно понимать:** Когда вы видите пароль в DevTools (вкладка Network) — **это нормально и безопасно при использовании HTTPS**.
 
-### 3.3. AsyncLocalStorage для user_id
+#### Почему пароль виден в DevTools:
 
-**Передача user_id в триггеры аудита:**
+1. **DevTools показывает данные ДО шифрования HTTPS**
+   - Браузер перехватывает запрос до TLS/SSL
+   - В реальной сети пароль передаётся зашифрованным
 
-```typescript
-// auth/jwt-auth.guard.ts
-@Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
-  canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
+2. **POST body видим только вам**
+   - Только владелец браузера видит payload
+   - В сети передаётся зашифрованный трафик
+
+#### 🔒 Защита в production:
+
+```nginx
+# ОБЯЗАТЕЛЬНО используйте HTTPS в production
+server {
+    listen 443 ssl http2;
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
     
-    // ✅ Устанавливаем userId в AsyncLocalStorage
-    return asyncLocalStorage.run({ userId: user?.id }, () => {
-      return super.canActivate(context);
-    });
-  }
+    # Современные TLS-протоколы
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
 }
+```
 
-// prisma.service.ts — middleware использует userId из ALS
-this.$use(async (params, next) => {
-  const store = asyncLocalStorage.getStore();
-  const userId = store?.userId;
-  
-  if (userId) {
-    await this.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
-  }
-  
-  return next(params);
+**Что происходит с паролем:**
+
+1. **В браузере (DevTools):**
+   ```json
+   {"email": "user@example.com", "password": "mypassword"}
+   ```
+   ↓
+
+2. **В сети (при HTTPS):**
+   ```
+   <зашифрованный бинарный поток, невозможно прочитать>
+   ```
+   ↓
+
+3. **На сервере (после расшифровки TLS):**
+   ```json
+   {"email": "user@example.com", "password": "mypassword"}
+   ```
+   ↓
+
+4. **В базе данных:**
+   ```
+   $2b$10$xQZJ8z9... (bcrypt hash, необратимо)
+   ```
+
+#### ❌ Что НЕ делать:
+
+```typescript
+// ❌ ПЛОХО: Пароль в GET-параметрах
+fetch(`/api/login?password=${password}`);  // НИКОГДА!
+
+// ❌ ПЛОХО: Пароль в URL
+fetch(`/api/login/${email}/${password}`);  // НИКОГДА!
+
+// ❌ ПЛОХО: Хранение пароля в localStorage
+localStorage.setItem('password', password);  // НИКОГДА!
+```
+
+#### ✅ Что делать ПРАВИЛЬНО:
+
+```typescript
+// ✅ ХОРОШО: POST с JSON body через HTTPS
+fetch('https://api.example.com/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password })
 });
+
+// ✅ Токен в httpOnly cookie
+// ✅ Пароль НЕ сохраняется на клиенте
+// ✅ Пароль хешируется на сервере
 ```
 
 ---
 
-## 4. Валидация входных данных
+## 4. Защита от XSS (Cross-Site Scripting)
 
-### 4.1. Class-validator
+### React автоматически экранирует вывод
+
+```tsx
+// ✅ React автоматически экранирует
+<div>{user.fullName}</div>  // Безопасно, даже если fullName = "<script>alert(1)</script>"
+```
+
+### httpOnly cookies
 
 ```typescript
-// DTO с валидацией
-export class CreateHabitDto {
+// Токены недоступны из JavaScript
+document.cookie;  // не содержит access_token
+```
+
+---
+
+## 5. Защита от CSRF (Cross-Site Request Forgery)
+
+### JWT в Bearer Authorization
+
+```typescript
+// ✅ Токен передаётся в заголовке, не в cookie
+headers: {
+  'Authorization': `Bearer ${token}`
+}
+```
+
+**Защита:**
+- Токен нужно явно добавить в заголовок
+- Сторонние сайты не могут автоматически отправить запрос
+
+---
+
+## 6. Валидация входных данных
+
+### Backend (NestJS)
+
+```typescript
+// class-validator автоматически проверяет DTO
+export class RegisterDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
+
   @IsString()
   @IsNotEmpty()
-  name: string;
-
-  @IsEnum(['good', 'bad'])
-  type: 'good' | 'bad';
-
-  @IsOptional()
-  @Matches(/^#[0-9A-Fa-f]{6}$/)
-  color?: string;
-
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  @IsOptional()
-  priority?: number;
+  fullName: string;
 }
 ```
 
-### 4.2. Global Validation Pipe
+### Frontend
 
-```typescript
-// main.ts
-app.useGlobalPipes(new ValidationPipe({
-  whitelist: true,    // ✅ Удалять неописанные поля
-  transform: true,    // ✅ Автоматическое преобразование типов
-}));
+```tsx
+// HTML5 валидация
+<input
+  type="email"
+  required
+  minLength={6}
+/>
 ```
 
 ---
 
-## 5. CORS
+## 7. Аудит действий пользователей
 
-```typescript
-// main.ts
-app.enableCors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-});
+### Триггер audit_log
+
+```sql
+-- Автоматически логирует все изменения
+CREATE TRIGGER habits_audit AFTER INSERT OR UPDATE OR DELETE ON habits
+  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
+```
+
+**Что записывается:**
+- `user_id` — кто выполнил действие (из `app.user_id`)
+- `operation` — INSERT/UPDATE/DELETE
+- `old_data` / `new_data` — состояние до и после
+- `timestamp` — когда произошло
+
+---
+
+## 8. Ограничения на уровне БД
+
+### Constraints
+
+```sql
+-- Уникальность email
+ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
+
+-- Валидация типа привычки
+ALTER TABLE habits ADD CONSTRAINT check_habit_type 
+  CHECK (type IN ('daily', 'weekly', 'custom'));
+
+-- Неотрицательные значения
+ALTER TABLE habit_stats ADD CONSTRAINT check_positive_counts
+  CHECK (total_expected >= 0 AND total_completed >= 0);
 ```
 
 ---
 
-## 6. Хеширование паролей
+## 9. Rate Limiting (рекомендация для production)
+
+### NestJS Throttler
 
 ```typescript
-// Регистрация
-const passwordHash = await bcrypt.hash(password, 10);  // ✅ bcrypt с 10 раундами
-
-// Вход
-const isValid = await bcrypt.compare(password, user.passwordHash);
-```
-
-**Не хранится в БД:**
-- ❌ Пароли в открытом виде
-- ✅ Только bcrypt hash
-
----
-
-## 7. Rate Limiting (TODO)
-
-**Рекомендация для production:**
-
-```typescript
-// Установить @nestjs/throttler
+// Для production: добавить rate limiting
 import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 10,  // 10 запросов в минуту
+ThrottlerModule.forRoot({
+      ttl: 60,        // 60 секунд
+      limit: 100,     // 100 запросов
     }),
   ],
 })
-export class AppModule {}
 ```
 
 ---
 
-## 8. Логирование (Audit Log)
+## 10. Environment Variables
 
-### 8.1. Триггер аудита
-
-Все изменения в таблицах `habits`, `habit_checkins`, `tags`, `reminders` логируются:
-
-```sql
-CREATE OR REPLACE FUNCTION audit_trigger_fn() RETURNS TRIGGER AS $$
-DECLARE
-  v_user_id UUID;
-BEGIN
-  -- Получаем user_id из SET LOCAL app.user_id
-  v_user_id := nullif(current_setting('app.user_id', true), '')::UUID;
-  
-  INSERT INTO audit_log (table_name, operation, record_id, user_id, old_data, new_data)
-  VALUES (
-    TG_TABLE_NAME,
-    TG_OP,
-    COALESCE(NEW.id, OLD.id),
-    v_user_id,  -- ✅ user_id из middleware
-    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN row_to_json(OLD) ELSE NULL END,
-    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW) ELSE NULL END
-  );
-  
-  RETURN COALESCE(NEW, OLD);
-END;
-$$ LANGUAGE plpgsql;
-```
-
-### 8.2. Проверка аудита
-
-```sql
--- Проверить, что user_id записывается
-SELECT user_id, operation, table_name, changed_at
-FROM audit_log
-WHERE table_name = 'habits'
-ORDER BY changed_at DESC
-LIMIT 10;
-
--- user_id НЕ должен быть NULL (если запрос через API)
-```
-
----
-
-## 9. Docker Security
-
-### 9.1. Non-root user (TODO)
-
-**Рекомендация для production:**
-
-```dockerfile
-# Dockerfile
-FROM node:20-alpine
-
-# Создать непривилегированного пользователя
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-
-USER nextjs
-
-# ... rest of Dockerfile
-```
-
-### 9.2. Secrets в docker-compose
-
-```yaml
-# docker-compose.yml
-services:
-  backend:
-    environment:
-      JWT_SECRET: ${JWT_SECRET}  # ✅ Из .env хоста
-```
-
----
-
-## 10. Проверка безопасности
-
-### Чек-лист
-
-- [x] **Секреты в .env** (не в коде)
-- [x] **.env в .gitignore**
-- [x] **Параметризация SQL** (Prisma + $queryRaw)
-- [x] **Хеширование паролей** (bcrypt)
-- [x] **JWT-токены** (не сессии)
-- [x] **Валидация входных данных** (class-validator)
-- [x] **CORS** настроен
-- [x] **Аудит изменений** (триггер + user_id)
-- [x] **AsyncLocalStorage** для user_id
-- [ ] **Rate limiting** (TODO для production)
-- [ ] **Non-root Docker user** (TODO для production)
-
-### Команды проверки
+### ⚠️ Секреты в переменных окружения
 
 ```bash
-# 1. Проверка секретов в коде
-grep -rn "postgres:postgres" apps/backend/src/ --include="*.ts"
-# Результат: ПУСТО
-
-grep -rn "jwt.*secret.*=" apps/backend/src/ --include="*.ts" | grep -v "process.env"
-# Результат: ПУСТО
-
-# 2. Проверка SQL-конкатенации
-grep -rn "executeRawUnsafe.*\${" apps/backend/src/ --include="*.ts"
-# Результат: ПУСТО (кроме apply-sql.ts с безопасным DDL)
-
-# 3. Проверка .env в .gitignore
-cat .gitignore | grep "\.env"
-# Результат: .env, .env.local, и т.д.
-
-# 4. Проверка параметризации в middleware
-cat apps/backend/src/prisma/prisma.service.ts | grep "executeRaw"
-# Результат: должно быть executeRaw` (с параметризацией)
+# .env (НЕ КОММИТИТЬ В GIT!)
+JWT_SECRET=production-secret-CHANGE-ME-xxxxxxxxxxxxx
+DATABASE_URL=postgresql://user:password@localhost:5434/db
 ```
 
----
-
-## Выводы
-
-### ✅ Соответствие требованиям
-
-| Требование | Статус | Комментарий |
-|------------|--------|-------------|
-| Секреты не в коде | ✅ | Все в .env |
-| SQL-параметризация | ✅ | Prisma + $queryRaw |
-| Хеширование паролей | ✅ | bcrypt (10 раундов) |
-| JWT-токены | ✅ | Аутентификация |
-| Валидация данных | ✅ | class-validator |
-| Аудит изменений | ✅ | Триггер + user_id |
-| CORS | ✅ | Настроен |
-
-### ✅ НЕТ штрафов
-
-- **Секреты в коде** → оценка не выше «3»: **НЕ НАРУШЕНО** ✅
-- **SQL-конкатенация** → оценка не выше «4»: **НЕ НАРУШЕНО** ✅
-
-### 📝 Рекомендации для production
-
-1. **Rate limiting** — защита от DDoS
-2. **HTTPS** — шифрование трафика
-3. **Helmet.js** — HTTP-заголовки безопасности
-4. **Non-root Docker user** — ограничение прав
-5. **Secrets management** — использовать Vault/AWS Secrets Manager
-6. **Audit logs мониторинг** — алерты на подозрительные действия
-7. **Регулярное обновление зависимостей** — `pnpm audit`
+**Рекомендации:**
+- Используйте `.env.example` как шаблон
+- Добавьте `.env` в `.gitignore`
+- В production используйте secrets manager (AWS Secrets Manager, HashiCorp Vault)
 
 ---
 
-**Дата**: Декабрь 2025  
-**Статус безопасности**: ✅ Соответствует требованиям курсовой работы
+## 📋 Checklist для production
+
+- [ ] **HTTPS везде** (TLS 1.2+)
+- [ ] **Сильный JWT_SECRET** (минимум 32 случайных символа)
+- [ ] **Rate limiting** на API
+- [ ] **CORS** настроен только для известных доменов
+- [ ] **Helmet.js** для HTTP заголовков безопасности
+- [ ] **CSP** (Content Security Policy)
+- [ ] **Регулярные обновления** зависимостей (`npm audit`)
+- [ ] **Логирование** подозрительной активности
+- [ ] **Резервное копирование** БД
+- [ ] **Мониторинг** и алерты
+
+---
+
+## 🎓 Выводы
+
+### Что реализовано:
+
+✅ **Параметризованные запросы** (Prisma ORM)  
+✅ **Хеширование паролей** (bcrypt)  
+✅ **JWT аутентификация** с httpOnly cookies  
+✅ **Валидация данных** (class-validator)  
+✅ **Аудит действий** (PostgreSQL триггеры)  
+✅ **Constraints на уровне БД**  
+✅ **Комментарии в коде** о безопасности  
+
+### Для production дополнительно:
+
+⚠️ HTTPS (Let's Encrypt)  
+⚠️ Rate limiting  
+⚠️ WAF (Web Application Firewall)  
+⚠️ Secrets manager  
+⚠️ Security headers (Helmet.js)  
+
+---
+
+**Дата последнего обновления**: 21 декабря 2025

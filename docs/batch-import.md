@@ -139,18 +139,18 @@ Authorization: Bearer <token>
 
 ```json
 [
-  {
+    {
     "id": "error-uuid-1",
     "jobId": "550e8400-e29b-41d4-a716-446655440000",
-    "rowNumber": 15,
-    "recordData": {
-      "name": "Invalid Habit",
+      "rowNumber": 15,
+      "recordData": {
+        "name": "Invalid Habit",
       "type": "invalid_type",
       "color": "#6366f1"
-    },
+      },
     "errorMessage": "Invalid habit type: must be 'good' or 'bad'",
-    "errorCode": "VALIDATION_ERROR",
-    "createdAt": "2024-01-15T10:02:15.000Z"
+      "errorCode": "VALIDATION_ERROR",
+      "createdAt": "2024-01-15T10:02:15.000Z"
   },
   {
     "id": "error-uuid-2",
@@ -163,8 +163,8 @@ Authorization: Bearer <token>
     "errorMessage": "Habit name is required",
     "errorCode": "VALIDATION_ERROR",
     "createdAt": "2024-01-15T10:03:45.000Z"
-  }
-]
+    }
+  ]
 ```
 
 ---

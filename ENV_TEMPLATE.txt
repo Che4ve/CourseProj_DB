@@ -9,7 +9,8 @@
 # ============================================
 
 # Database Configuration
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/habit_tracker
+# Примечание: Порт 5434 используется чтобы не конфликтовать с другими PostgreSQL
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/habit_tracker
 
 # JWT Secret (ОБЯЗАТЕЛЬНО измените это значение!)
 # Для генерации: openssl rand -hex 32

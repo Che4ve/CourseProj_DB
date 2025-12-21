@@ -400,7 +400,7 @@ CREATE INDEX idx_batch_errors_job
 3. **Descending Index** — индекс с сортировкой DESC (для ORDER BY DESC)
    ```sql
    CREATE INDEX idx_habit_checkins_date ON habit_checkins(checkin_date DESC);
-   ```
+```
 
 ---
 

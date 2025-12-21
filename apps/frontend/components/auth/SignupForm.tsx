@@ -11,6 +11,7 @@ import Link from 'next/link';
 export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const fullNameFieldId = useId();
   const emailFieldId = useId();
   const passwordFieldId = useId();
 
@@ -32,6 +33,17 @@ export function SignupForm() {
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor={fullNameFieldId}>Имя</Label>
+            <Input
+              id={fullNameFieldId}
+              name="fullName"
+              type="text"
+              placeholder="Иван Иванов"
+              required
+              disabled={loading}
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor={emailFieldId}>Email</Label>
             <Input

@@ -370,7 +370,7 @@ Authorization: Bearer <token>
 
 **Response:** `200 OK`
 ```json
-{
+  {
   "userId": "uuid",
   "period": {
     "from": "2024-01-01",
@@ -458,9 +458,9 @@ Authorization: Bearer <token>
 **Response:** `200 OK`
 ```json
 [
-  {
+    {
     "id": "uuid",
-    "rowNumber": 15,
+      "rowNumber": 15,
     "recordData": {
       "name": "Invalid Habit",
       "type": "invalid_type"
@@ -468,8 +468,8 @@ Authorization: Bearer <token>
     "errorMessage": "Invalid habit type: must be 'good' or 'bad'",
     "errorCode": "VALIDATION_ERROR",
     "createdAt": "2024-01-15T10:02:15.000Z"
-  }
-]
+    }
+  ]
 ```
 
 ---
@@ -522,15 +522,15 @@ curl http://localhost:3001/habits \
 ```javascript
 // Регистрация
 const register = async () => {
-  const response = await fetch('http://localhost:3001/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+const response = await fetch('http://localhost:3001/auth/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
       email: 'user@example.com',
       password: 'Pass123!',
       fullName: 'John Doe'
-    })
-  });
+  })
+});
   const data = await response.json();
   return data.access_token;
 };

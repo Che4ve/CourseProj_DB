@@ -10,25 +10,25 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   ): boolean | Promise<boolean> | Observable<boolean> {
     // Вызываем базовую проверку JWT
     const result = super.canActivate(context);
-
+      
     // Если результат - Promise, обрабатываем асинхронно
     if (result instanceof Promise) {
       return result.then((isValid) => {
         if (isValid) {
-          const request = context.switchToHttp().getRequest();
-          const user = request.user;
-
-          if (user?.id) {
+        const request = context.switchToHttp().getRequest();
+        const user = request.user;
+        
+        if (user?.id) {
             // Сохраняем userId в AsyncLocalStorage для использования в запросах
             asyncLocalStorage.enterWith({ userId: user.id });
           }
         }
         return isValid;
       });
-    }
-
+      }
+      
     // Если результат - Observable или boolean, возвращаем как есть
-    return result;
+      return result;
   }
 }
 

@@ -10,6 +10,12 @@ export interface CreateCheckinDto {
   durationMinutes?: number;
 }
 
+export interface UpdateCheckinDto {
+  notes?: string | null;
+  moodRating?: number | null;
+  durationMinutes?: number | null;
+}
+
 @Injectable()
 export class CheckinsService {
   constructor(private prisma: PrismaService) {}
@@ -117,5 +123,51 @@ export class CheckinsService {
 
     return { message: 'Checkin deleted successfully', deletedCount: result.count };
   }
-}
 
+  async updateByHabitAndDate(
+    habitId: string,
+    date: string,
+    userId: string,
+    dto: UpdateCheckinDto,
+  ) {
+    const habit = await this.prisma.habit.findFirst({
+      where: { id: habitId, userId },
+    });
+
+    if (!habit) {
+      throw new NotFoundException('Habit not found');
+    }
+
+    const checkinDate = new Date(date);
+    const existing = await this.prisma.habitCheckin.findFirst({
+      where: {
+        habitId,
+        userId,
+        checkinDate,
+      },
+    });
+
+    if (!existing) {
+      return this.prisma.habitCheckin.create({
+        data: {
+          habitId,
+          userId,
+          checkinDate,
+          notes: dto.notes ?? null,
+          moodRating: dto.moodRating ?? null,
+          durationMinutes: dto.durationMinutes ?? null,
+        },
+      });
+    }
+
+    return this.prisma.habitCheckin.update({
+      where: { id: existing.id },
+      data: {
+        notes: dto.notes !== undefined ? dto.notes : undefined,
+        moodRating: dto.moodRating !== undefined ? dto.moodRating : undefined,
+        durationMinutes:
+          dto.durationMinutes !== undefined ? dto.durationMinutes : undefined,
+      },
+    });
+  }
+}

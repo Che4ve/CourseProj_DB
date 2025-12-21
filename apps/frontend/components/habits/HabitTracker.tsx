@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useToast } from "@/contexts/ToastContext";
-import { setCompletion } from "@/app/actions/completionActions";
+import { setCompletion, updateCompletion } from "@/app/actions/completionActions";
 import {
 	formatDate,
 	getToday,
@@ -21,7 +21,16 @@ import {
 	isToday,
 	isFutureDate,
 } from "@/lib/utils/dateUtils";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import {
+	Angry,
+	Check,
+	ChevronLeft,
+	ChevronRight,
+	Frown,
+	Laugh,
+	Meh,
+	Smile,
+} from "lucide-react";
 
 interface HabitTrackerProps {
 	habitId: string;
@@ -65,9 +74,22 @@ export function HabitTracker({
 		onPendingChange?.(pendingSet.size > 0);
 	}, [pendingSet.size, onPendingChange]);
 
-	const [notes, setNotes] = useState("");
-	const [moodRating, setMoodRating] = useState("");
-	const [durationMinutes, setDurationMinutes] = useState("");
+	const todayStr = getToday();
+	const todayCheckin = completions.find(
+		(checkin) => formatDate(new Date(checkin.checkinDate)) === todayStr,
+	);
+	const initialDetails = {
+		notes: todayCheckin?.notes ?? "",
+		moodRating: todayCheckin?.moodRating?.toString() ?? "",
+		durationMinutes: todayCheckin?.durationMinutes?.toString() ?? "",
+	};
+
+	const [notes, setNotes] = useState(initialDetails.notes);
+	const [moodRating, setMoodRating] = useState(initialDetails.moodRating);
+	const [durationMinutes, setDurationMinutes] = useState(
+		initialDetails.durationMinutes,
+	);
+	const [savedDetails, setSavedDetails] = useState(initialDetails);
 
 	const handleDateClick = async (
 		date: Date,
@@ -129,8 +151,39 @@ export function HabitTracker({
 		}
 	};
 
-	const handleTodayClick = () => {
-		const todayDate = new Date();
+	const isTodayCompleted = optimisticCompletions.has(todayStr);
+
+	useEffect(() => {
+		if (!isTodayCompleted) {
+			setNotes("");
+			setMoodRating("");
+			setDurationMinutes("");
+			setSavedDetails({ notes: "", moodRating: "", durationMinutes: "" });
+			return;
+		}
+
+		if (todayCheckin) {
+			const nextDetails = {
+				notes: todayCheckin.notes ?? "",
+				moodRating: todayCheckin.moodRating?.toString() ?? "",
+				durationMinutes: todayCheckin.durationMinutes?.toString() ?? "",
+			};
+
+			setNotes(nextDetails.notes);
+			setMoodRating(nextDetails.moodRating);
+			setDurationMinutes(nextDetails.durationMinutes);
+			setSavedDetails(nextDetails);
+		}
+	}, [
+		isTodayCompleted,
+		todayCheckin?.id,
+		todayCheckin?.notes,
+		todayCheckin?.moodRating,
+		todayCheckin?.durationMinutes,
+	]);
+
+	const buildUpdatePayload = () => {
+		const trimmedNotes = notes.trim();
 		const moodValue = moodRating ? Number(moodRating) : undefined;
 		const durationValue = durationMinutes ? Number(durationMinutes) : undefined;
 		const normalizedMood =
@@ -141,12 +194,80 @@ export function HabitTracker({
 			durationValue !== undefined && Number.isNaN(durationValue)
 				? undefined
 				: durationValue;
-		const detailPayload = {
-			notes: notes.trim() || undefined,
-			moodRating: normalizedMood,
-			durationMinutes: normalizedDuration,
+
+		return {
+			notes: trimmedNotes ? trimmedNotes : null,
+			moodRating:
+				normalizedMood === undefined ? null : normalizedMood,
+			durationMinutes:
+				normalizedDuration === undefined ? null : normalizedDuration,
 		};
-		handleDateClick(todayDate, detailPayload);
+	};
+
+	const hasChanges =
+		isTodayCompleted &&
+		(notes.trim() !== savedDetails.notes.trim() ||
+			moodRating.trim() !== savedDetails.moodRating.trim() ||
+			durationMinutes.trim() !== savedDetails.durationMinutes.trim());
+
+	const handleTodayClick = () => {
+		const todayDate = new Date();
+
+		if (isTodayCompleted && hasChanges) {
+			handleUpdateToday();
+			return;
+		}
+
+		handleDateClick(todayDate);
+	};
+
+	const handleUpdateToday = async () => {
+		setError(null);
+
+		// bump mutation id for this date
+		const id = (lastMutationIdRef.current[todayStr] || 0) + 1;
+		lastMutationIdRef.current[todayStr] = id;
+
+		setPendingSet((prev) => new Set(prev).add(todayStr));
+		startOperation();
+
+		try {
+			const payload = buildUpdatePayload();
+			await updateCompletion(habitId, todayStr, payload);
+
+			if (lastMutationIdRef.current[todayStr] === id) {
+				setPendingSet((prev) => {
+					const next = new Set(prev);
+					next.delete(todayStr);
+					return next;
+				});
+
+				setSavedDetails({
+					notes: payload.notes ?? "",
+					moodRating:
+						payload.moodRating === null
+							? ""
+							: payload.moodRating?.toString() ?? "",
+					durationMinutes:
+						payload.durationMinutes === null
+							? ""
+							: payload.durationMinutes?.toString() ?? "",
+				});
+
+				finishOperation();
+			}
+		} catch (err) {
+			if (lastMutationIdRef.current[todayStr] !== id) return;
+
+			setPendingSet((prev) => {
+				const next = new Set(prev);
+				next.delete(todayStr);
+				return next;
+			});
+
+			setError(err instanceof Error ? err.message : "Произошла ошибка");
+			finishOperation();
+		}
 	};
 
 	const goToPreviousMonth = () => {
@@ -266,58 +387,90 @@ export function HabitTracker({
 				})}
 			</div>
 
-			{/* Большая кнопка "Отметить сегодня" */}
-			<div className="space-y-2 rounded-lg border border-border p-3">
-				<Label htmlFor="checkin-notes">Детали отметки</Label>
-				<textarea
-					name="notes"
-					value={notes}
-					onChange={(event) => setNotes(event.target.value)}
-					placeholder="Заметки о выполнении"
-					className="min-h-[80px] w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
-				/>
-				<div className="grid gap-2 sm:grid-cols-2">
-					<div className="space-y-1">
-						<Label htmlFor="moodRating">Настроение (1-5)</Label>
-						<Input
-							type="number"
-							min="1"
-							max="5"
-							value={moodRating}
-							onChange={(event) => setMoodRating(event.target.value)}
-						/>
-					</div>
-					<div className="space-y-1">
-						<Label htmlFor="durationMinutes">Длительность (мин)</Label>
-						<Input
-							type="number"
-							min="1"
-							value={durationMinutes}
-							onChange={(event) => setDurationMinutes(event.target.value)}
-						/>
-					</div>
-				</div>
-			</div>
 			<Button
 				onClick={handleTodayClick}
-				disabled={pendingSet.has(getToday())}
+				disabled={pendingSet.has(todayStr)}
 				className="w-full h-12 text-base font-semibold"
-				variant={optimisticCompletions.has(getToday()) ? "outline" : "default"}
+				variant={isTodayCompleted ? "outline" : "default"}
 			>
-				{pendingSet.has(getToday()) ? (
+				{pendingSet.has(todayStr) ? (
 					<>
 						<div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
 						Сохранение...
 					</>
-				) : optimisticCompletions.has(getToday()) ? (
+				) : isTodayCompleted ? (
 					<>
 						<Check className="h-5 w-5 mr-2" />
-						Выполнено сегодня
+						{hasChanges ? "Обновить" : "Выполнено сегодня"}
 					</>
 				) : (
 					"Отметить сегодня"
 				)}
 			</Button>
+			<div
+				className={`overflow-hidden transition-all duration-300 ease-in-out ${
+					isTodayCompleted
+						? "max-h-[360px] opacity-100 translate-y-0"
+						: "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+				}`}
+			>
+				<div className="mt-2 space-y-2 rounded-lg border border-border p-3">
+					<Label htmlFor="checkin-notes">Детали отметки</Label>
+					<textarea
+						id="checkin-notes"
+						name="notes"
+						value={notes}
+						onChange={(event) => setNotes(event.target.value)}
+						placeholder="Заметки о выполнении"
+						disabled={!isTodayCompleted || pendingSet.has(todayStr)}
+						className="min-h-[80px] w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
+					/>
+					<div className="grid gap-2 sm:grid-cols-2">
+						<div className="space-y-1">
+							<Label>Настроение</Label>
+							<div className="flex flex-nowrap gap-2">
+								{[
+									{ value: "1", Icon: Angry, label: "1" },
+									{ value: "2", Icon: Frown, label: "2" },
+									{ value: "3", Icon: Meh, label: "3" },
+									{ value: "4", Icon: Smile, label: "4" },
+									{ value: "5", Icon: Laugh, label: "5" },
+								].map(({ value, Icon, label }) => {
+									const isSelected = moodRating === value;
+									return (
+										<button
+											key={value}
+											type="button"
+											aria-pressed={isSelected}
+											onClick={() => setMoodRating(value)}
+											disabled={!isTodayCompleted || pendingSet.has(todayStr)}
+											className={`h-9 w-9 rounded-md border text-sm transition-colors flex items-center justify-center ${
+												isSelected
+													? "border-blue-500 text-blue-600 bg-blue-50"
+													: "border-border text-muted-foreground hover:bg-accent"
+											} disabled:cursor-not-allowed disabled:opacity-50`}
+										>
+											<Icon className="h-5 w-5" />
+											<span className="sr-only">{label}</span>
+										</button>
+									);
+								})}
+							</div>
+						</div>
+						<div className="space-y-1">
+							<Label htmlFor="durationMinutes">Длительность (мин)</Label>
+							<Input
+								id="durationMinutes"
+								type="number"
+								min="1"
+								value={durationMinutes}
+								onChange={(event) => setDurationMinutes(event.target.value)}
+								disabled={!isTodayCompleted || pendingSet.has(todayStr)}
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }

@@ -108,6 +108,12 @@ export interface CreateCheckinDto {
 	durationMinutes?: number;
 }
 
+export interface UpdateCheckinDto {
+	notes?: string | null;
+	moodRating?: number | null;
+	durationMinutes?: number | null;
+}
+
 export interface CreateTagDto {
 	name: string;
 }
@@ -222,6 +228,17 @@ export const serverCheckinsApi = {
 	async delete(habitId: string, date: string): Promise<void> {
 		return fetchApiServer<void>(`/checkins/habit/${habitId}/date/${date}`, {
 			method: "DELETE",
+		});
+	},
+
+	async update(
+		habitId: string,
+		date: string,
+		data: UpdateCheckinDto,
+	): Promise<HabitCheckin> {
+		return fetchApiServer<HabitCheckin>(`/checkins/habit/${habitId}/date/${date}`, {
+			method: "PATCH",
+			body: JSON.stringify(data),
 		});
 	},
 

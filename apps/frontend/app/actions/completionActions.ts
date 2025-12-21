@@ -45,3 +45,22 @@ export async function setCompletion(
     // Поэтому мы просто логируем ошибку, но не пробрасываем её
   }
 }
+
+export async function updateCompletion(
+  habitId: string,
+  date: string,
+  details: { notes?: string | null; moodRating?: number | null; durationMinutes?: number | null }
+) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error('Неверный формат даты');
+  }
+
+  try {
+    await serverCheckinsApi.update(habitId, date, details);
+    revalidateTag(`habit-${habitId}`);
+    revalidateTag('habits-list');
+  } catch (error) {
+    console.error('Error updating completion:', error);
+    throw new Error('Не удалось обновить отметку');
+  }
+}

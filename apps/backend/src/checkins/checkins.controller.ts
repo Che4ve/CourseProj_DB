@@ -1,7 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CheckinsService, CreateCheckinDto } from './checkins.service';
+import { CheckinsService, CreateCheckinDto, UpdateCheckinDto } from './checkins.service';
 
 @ApiTags('checkins')
 @Controller('checkins')
@@ -41,5 +52,15 @@ export class CheckinsController {
   ) {
     return this.checkinsService.deleteByHabitAndDate(habitId, date, req.user.id);
   }
-}
 
+  @Patch('habit/:habitId/date/:date')
+  @ApiOperation({ summary: 'Update checkin by habit and date' })
+  async updateByHabitAndDate(
+    @Param('habitId') habitId: string,
+    @Param('date') date: string,
+    @Body() dto: UpdateCheckinDto,
+    @Request() req,
+  ) {
+    return this.checkinsService.updateByHabitAndDate(habitId, date, req.user.id, dto);
+  }
+}

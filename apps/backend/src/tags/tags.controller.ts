@@ -12,8 +12,8 @@ export class TagsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all tags' })
-  async findAll(): Promise<any> {
-    return this.tagsService.findAll();
+  async findAll(@Request() req): Promise<any> {
+    return this.tagsService.findAll(req.user.id);
   }
 
   @Post()

@@ -2,9 +2,9 @@
 
 import { revalidateTag } from 'next/cache';
 import { serverTagsApi } from '@/lib/auth/server-api';
-import type { Tag } from '@/lib/typeDefinitions';
+import type { TagWithOwnership } from '@/lib/typeDefinitions';
 
-export async function getTags(): Promise<Tag[]> {
+export async function getTags(): Promise<TagWithOwnership[]> {
   try {
     return await serverTagsApi.getAll();
   } catch (error) {
@@ -15,14 +15,13 @@ export async function getTags(): Promise<Tag[]> {
 
 export async function createTag(formData: FormData) {
   const name = (formData.get('name') as string | null)?.trim();
-  const color = (formData.get('color') as string | null) || undefined;
 
   if (!name) {
     throw new Error('Укажите название тега');
   }
 
   try {
-    await serverTagsApi.create({ name, color });
+    await serverTagsApi.create({ name });
     revalidateTag('tags-list');
   } catch (error) {
     console.error('Error creating tag:', error);
@@ -32,14 +31,13 @@ export async function createTag(formData: FormData) {
 
 export async function updateTag(id: string, formData: FormData) {
   const name = (formData.get('name') as string | null)?.trim();
-  const color = (formData.get('color') as string | null) || undefined;
 
   if (!name) {
     throw new Error('Укажите название тега');
   }
 
   try {
-    await serverTagsApi.update(id, { name, color });
+    await serverTagsApi.update(id, { name });
     revalidateTag('tags-list');
     revalidateTag('habits-list');
   } catch (error) {

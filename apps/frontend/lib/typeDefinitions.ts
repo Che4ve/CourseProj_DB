@@ -6,10 +6,13 @@ export interface Tag {
   id: string;
   name: string;
   slug: string;
-  color: string;
   usageCount: number;
   isSystem: boolean;
   createdAt: string;
+}
+
+export interface TagWithOwnership extends Tag {
+  isOwned: boolean;
 }
 
 export interface HabitTag {
@@ -63,7 +66,6 @@ export interface Habit {
   name: string;
   description?: string | null;
   type: HabitType;
-  color: string;
   priority: number;
   isArchived: boolean;
   displayOrder: number;

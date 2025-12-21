@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { Tag } from '@/lib/typeDefinitions';
+import { useRouter } from 'next/navigation';
+import type { TagWithOwnership } from '@/lib/typeDefinitions';
 import { createTag, deleteTag, updateTag } from '@/app/actions/tagActions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -9,12 +10,13 @@ import { Label } from '@/components/ui/Label';
 import { TagList } from './TagList';
 
 interface TagManagerProps {
-  tags: Tag[];
+  tags: TagWithOwnership[];
 }
 
 export function TagManager({ tags }: TagManagerProps) {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const router = useRouter();
 
   async function handleCreate(formData: FormData) {
     setCreating(true);
@@ -22,6 +24,7 @@ export function TagManager({ tags }: TagManagerProps) {
 
     try {
       await createTag(formData);
+      router.refresh();
       setCreating(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось создать тег');
@@ -29,24 +32,34 @@ export function TagManager({ tags }: TagManagerProps) {
     }
   }
 
+  async function handleUpdate(id: string, formData: FormData) {
+    setError(null);
+    try {
+      await updateTag(id, formData);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось обновить тег');
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setError(null);
+    try {
+      await deleteTag(id);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось удалить тег');
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-border p-4">
         <h2 className="text-lg font-semibold mb-3">Новый тег</h2>
-        <form action={handleCreate} className="grid gap-3 md:grid-cols-[1fr_auto_auto] items-end">
+        <form action={handleCreate} className="grid gap-3 md:grid-cols-[1fr_auto] items-end">
           <div className="space-y-2">
             <Label htmlFor="tag-name">Название</Label>
             <Input id="tag-name" name="name" placeholder="Например: Здоровье" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="tag-color">Цвет</Label>
-            <input
-              id="tag-color"
-              name="color"
-              type="color"
-              defaultValue="#6366f1"
-              className="h-9 w-16 rounded-md border border-border"
-            />
           </div>
           <Button type="submit" disabled={creating}>
             {creating ? 'Создание...' : 'Создать'}
@@ -59,32 +72,28 @@ export function TagManager({ tags }: TagManagerProps) {
         <h2 className="text-lg font-semibold">Все теги</h2>
         <TagList
           tags={tags}
-          renderActions={(tag) => (
-            <>
-              <form
-                action={updateTag.bind(null, tag.id)}
-                className="flex flex-wrap items-center gap-2"
-              >
-                <Input name="name" defaultValue={tag.name} className="h-8 w-40" />
-                <input
-                  type="color"
-                  name="color"
-                  defaultValue={
-                    /^#([0-9a-fA-F]{3}){1,2}$/.test(tag.color) ? tag.color : '#6366f1'
-                  }
-                  className="h-8 w-10 rounded-md border border-border"
-                />
-                <Button type="submit" size="sm" variant="outline">
-                  Сохранить
-                </Button>
-              </form>
-              <form action={deleteTag.bind(null, tag.id)}>
-                <Button type="submit" size="sm" variant="destructive">
-                  Удалить
-                </Button>
-              </form>
-            </>
-          )}
+          renderActions={(tag) =>
+            tag.isOwned ? (
+              <>
+                <form
+                  action={handleUpdate.bind(null, tag.id)}
+                  className="flex flex-wrap items-center gap-2"
+                >
+                  <Input name="name" defaultValue={tag.name} className="h-8 w-40" />
+                  <Button type="submit" size="sm" variant="outline">
+                    Сохранить
+                  </Button>
+                </form>
+                <form action={handleDelete.bind(null, tag.id)}>
+                  <Button type="submit" size="sm" variant="destructive">
+                    Удалить
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">Только чтение</span>
+            )
+          }
         />
       </div>
     </div>

@@ -17,7 +17,6 @@ export async function createHabit(formData: FormData) {
   const name = formData.get('name') as string;
   const type = formData.get('type') as HabitType;
   const description = formData.get('description') as string | undefined;
-  const color = (formData.get('color') as string | null) || undefined;
   const priorityRaw = formData.get('priority') as string | null;
   const priority = priorityRaw ? Number(priorityRaw) : undefined;
   const tagIds = formData.getAll('tagIds') as string[];
@@ -27,7 +26,7 @@ export async function createHabit(formData: FormData) {
   }
 
   try {
-    const habit = await serverHabitsApi.create({ name, type, description, color, priority });
+    const habit = await serverHabitsApi.create({ name, type, description, priority });
     if (tagIds.length > 0) {
       await Promise.all(tagIds.map((tagId) => serverTagsApi.attach(tagId, habit.id)));
     }
@@ -42,7 +41,6 @@ export async function updateHabit(id: string, formData: FormData) {
   const name = formData.get('name') as string;
   const type = formData.get('type') as HabitType;
   const description = formData.get('description') as string | undefined;
-  const color = (formData.get('color') as string | null) || undefined;
   const priorityRaw = formData.get('priority') as string | null;
   const priority = priorityRaw ? Number(priorityRaw) : undefined;
   const tagIds = formData.getAll('tagIds') as string[];
@@ -52,7 +50,7 @@ export async function updateHabit(id: string, formData: FormData) {
   }
 
   try {
-    await serverHabitsApi.update(id, { name, type, description, color, priority });
+    await serverHabitsApi.update(id, { name, type, description, priority });
 
     const habit = await serverHabitsApi.getOne(id);
     const existingTagIds = habit.tags?.map((tag) => tag.tagId) ?? [];

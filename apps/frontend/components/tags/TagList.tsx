@@ -5,12 +5,12 @@ import type { Tag } from '@/lib/typeDefinitions';
 import { Input } from '@/components/ui/Input';
 import { TagBadge } from './TagBadge';
 
-interface TagListProps {
-  tags: Tag[];
-  renderActions?: (tag: Tag) => React.ReactNode;
+interface TagListProps<T extends Tag> {
+  tags: T[];
+  renderActions?: (tag: T) => React.ReactNode;
 }
 
-export function TagList({ tags, renderActions }: TagListProps) {
+export function TagList<T extends Tag>({ tags, renderActions }: TagListProps<T>) {
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {

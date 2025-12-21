@@ -207,7 +207,7 @@ export function HabitCard({ habit, completions, allTags }: HabitCardProps) {
         </Dialog>
 
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Изменить привычку</DialogTitle>
             </DialogHeader>

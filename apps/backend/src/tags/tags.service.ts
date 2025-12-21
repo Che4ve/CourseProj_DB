@@ -1,159 +1,378 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import {
+	Injectable,
+	NotFoundException,
+	BadRequestException,
+} from "@nestjs/common";
+import type { Prisma } from "@repo/db";
+import { PrismaService } from "../prisma/prisma.service";
 
 export interface CreateTagDto {
-  name: string;
-  color?: string;
+	name: string;
+	color?: string;
 }
 
 export interface UpdateTagDto {
-  name?: string;
-  color?: string;
+	name?: string;
+	color?: string;
 }
 
 @Injectable()
 export class TagsService {
-  constructor(private prisma: PrismaService) {}
+	constructor(private prisma: PrismaService) {}
 
-  private slugify(value: string): string {
-    return value
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
-  }
+	private async setAuditUser(
+		tx: Prisma.TransactionClient,
+		userId: string,
+	): Promise<void> {
+		await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
+	}
 
-  async findAll(): Promise<any> {
-    return this.prisma.tag.findMany({
-      orderBy: { name: 'asc' },
-    });
-  }
+	private slugify(value: string): string {
+		return value
+			.trim()
+			.toLowerCase()
+			.normalize("NFKD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.replace(/[^a-z0-9\s-]/g, "")
+			.replace(/\s+/g, "-")
+			.replace(/-+/g, "-")
+			.replace(/^-+|-+$/g, "");
+	}
 
-  async create(userId: string, dto: CreateTagDto): Promise<any> {
-    await this.prisma.setUserId(userId);
+	private async getUniqueSlug(
+		baseSlug: string,
+		db: Prisma.TransactionClient | PrismaService = this.prisma,
+	): Promise<string> {
+		const normalized = baseSlug || "tag";
+		const candidates = await db.tag.findMany({
+			where: {
+				OR: [{ slug: normalized }, { slug: { startsWith: `${normalized}-` } }],
+			},
+			select: { slug: true },
+		});
 
-    const name = dto.name?.trim();
-    if (!name) {
-      throw new BadRequestException('Tag name is required');
-    }
+		if (candidates.length === 0) {
+			return normalized;
+		}
 
-    const slug = this.slugify(name);
+		let hasBase = false;
+		let maxSuffix = 0;
+		const prefix = `${normalized}-`;
 
-    return this.prisma.tag.create({
-      data: {
-        name,
-        slug,
-        color: dto.color,
-      },
-    });
-  }
+		for (const record of candidates) {
+			if (record.slug === normalized) {
+				hasBase = true;
+				continue;
+			}
 
-  async update(id: string, userId: string, dto: UpdateTagDto): Promise<any> {
-    await this.prisma.setUserId(userId);
+			if (!record.slug.startsWith(prefix)) {
+				continue;
+			}
 
-    const tag = await this.prisma.tag.findUnique({ where: { id } });
-    if (!tag) {
-      throw new NotFoundException('Tag not found');
-    }
+			const suffix = record.slug.slice(prefix.length);
+			if (!/^\d+$/.test(suffix)) {
+				continue;
+			}
 
-    if (dto.name !== undefined && !dto.name.trim()) {
-      throw new BadRequestException('Tag name is required');
-    }
+			const parsed = Number(suffix);
+			if (!Number.isNaN(parsed) && parsed > maxSuffix) {
+				maxSuffix = parsed;
+			}
+		}
 
-    return this.prisma.tag.update({
-      where: { id },
-      data: {
-        name: dto.name?.trim() ?? undefined,
-        color: dto.color ?? undefined,
-      },
-    });
-  }
+		if (!hasBase) {
+			return normalized;
+		}
 
-  async delete(id: string, userId: string): Promise<any> {
-    await this.prisma.setUserId(userId);
+		return `${normalized}-${maxSuffix + 1}`;
+	}
 
-    const tag = await this.prisma.tag.findUnique({ where: { id } });
-    if (!tag) {
-      throw new NotFoundException('Tag not found');
-    }
+	private async getOwnedTagIds(userId: string): Promise<string[]> {
+		const records = await this.prisma.auditLog.findMany({
+			where: {
+				tableName: "tags",
+				operation: "INSERT",
+				userId,
+			},
+			select: { recordId: true },
+		});
 
-    await this.prisma.tag.delete({ where: { id } });
+		return records
+			.map((record) => record.recordId)
+			.filter((id): id is string => Boolean(id));
+	}
 
-    return { message: 'Tag deleted successfully' };
-  }
+	private async getUserTagIds(userId: string): Promise<{
+		allIds: string[];
+		ownedIds: Set<string>;
+	}> {
+		const [ownedIds, usedTags] = await Promise.all([
+			this.getOwnedTagIds(userId),
+			this.prisma.habitTag.findMany({
+				where: { habit: { userId } },
+				select: { tagId: true },
+			}),
+		]);
 
-  async attachTagToHabit(tagId: string, habitId: string, userId: string) {
-    await this.prisma.setUserId(userId);
+		const ownedSet = new Set(ownedIds);
+		const usedIds = usedTags.map((record) => record.tagId);
+		const allIds = Array.from(new Set([...ownedIds, ...usedIds]));
 
-    const habit = await this.prisma.habit.findFirst({
-      where: { id: habitId, userId },
-    });
+		return { allIds, ownedIds: ownedSet };
+	}
 
-    if (!habit) {
-      throw new NotFoundException('Habit not found');
-    }
+	private async isTagCreatedByUser(
+		tagId: string,
+		userId: string,
+	): Promise<boolean> {
+		const ownership = await this.prisma.auditLog.findFirst({
+			where: {
+				tableName: "tags",
+				operation: "INSERT",
+				recordId: tagId,
+				userId,
+			},
+			select: { id: true },
+		});
 
-    const tag = await this.prisma.tag.findUnique({ where: { id: tagId } });
-    if (!tag) {
-      throw new NotFoundException('Tag not found');
-    }
+		return Boolean(ownership);
+	}
 
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.habitTag.findUnique({
-        where: { habitId_tagId: { habitId, tagId } },
-        include: { tag: true },
-      });
+	private async ensureTagOwnership(
+		tagId: string,
+		userId: string,
+	): Promise<void> {
+		if (await this.isTagCreatedByUser(tagId, userId)) {
+			return;
+		}
 
-      if (existing) {
-        return existing;
-      }
+		throw new NotFoundException("Tag not found");
+	}
 
-      const created = await tx.habitTag.create({
-        data: { habitId, tagId },
-        include: { tag: true },
-      });
+	private async ensureTagAccessible(
+		tagId: string,
+		userId: string,
+	): Promise<void> {
+		if (await this.isTagCreatedByUser(tagId, userId)) {
+			return;
+		}
 
-      await tx.tag.update({
-        where: { id: tagId },
-        data: { usageCount: { increment: 1 } },
-      });
+		const used = await this.prisma.habitTag.findFirst({
+			where: { tagId, habit: { userId } },
+			select: { id: true },
+		});
 
-      return created;
-    });
-  }
+		if (!used) {
+			throw new NotFoundException("Tag not found");
+		}
+	}
 
-  async detachTagFromHabit(tagId: string, habitId: string, userId: string) {
-    await this.prisma.setUserId(userId);
+	async findAll(userId: string): Promise<any> {
+		const { allIds, ownedIds } = await this.getUserTagIds(userId);
+		if (allIds.length === 0) {
+			return [];
+		}
 
-    const habit = await this.prisma.habit.findFirst({
-      where: { id: habitId, userId },
-    });
+		const tags = await this.prisma.tag.findMany({
+			where: { id: { in: allIds } },
+			orderBy: { name: "asc" },
+		});
 
-    if (!habit) {
-      throw new NotFoundException('Habit not found');
-    }
+		return tags.map((tag) => ({
+			...tag,
+			isOwned: ownedIds.has(tag.id),
+		}));
+	}
 
-    const habitTag = await this.prisma.habitTag.findUnique({
-      where: { habitId_tagId: { habitId, tagId } },
-    });
+	async create(userId: string, dto: CreateTagDto): Promise<any> {
+		const name = dto.name?.trim();
+		if (!name) {
+			throw new BadRequestException("Tag name is required");
+		}
 
-    if (!habitTag) {
-      return { message: 'Tag already detached' };
-    }
+		const baseSlug = this.slugify(name) || "tag";
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.habitTag.delete({ where: { id: habitTag.id } });
+		return this.prisma.$transaction(async (tx) => {
+			await this.setAuditUser(tx, userId);
 
-      const tag = await tx.tag.findUnique({ where: { id: tagId } });
-      const nextCount = Math.max(0, (tag?.usageCount ?? 0) - 1);
+			let tag: any;
 
-      await tx.tag.update({
-        where: { id: tagId },
-        data: { usageCount: nextCount },
-      });
-    });
+			for (let attempt = 0; attempt < 2; attempt += 1) {
+				const slug = await this.getUniqueSlug(baseSlug, tx);
 
-    return { message: 'Tag detached successfully' };
-  }
+				try {
+					tag = await tx.tag.create({
+						data: {
+							name,
+							slug,
+							color: dto.color,
+						},
+					});
+					const ownership = await tx.auditLog.findFirst({
+						where: {
+							tableName: "tags",
+							operation: "INSERT",
+							recordId: tag.id,
+							userId,
+						},
+					});
+
+					if (!ownership) {
+						await tx.auditLog.create({
+							data: {
+								tableName: "tags",
+								operation: "INSERT",
+								recordId: tag.id,
+								userId,
+								newData: {
+									id: tag.id,
+									name: tag.name,
+									slug: tag.slug,
+								},
+							},
+						});
+					}
+					break;
+				} catch (error) {
+					const target = error?.meta?.target;
+					const targets = Array.isArray(target) ? target : [];
+
+					if (
+						error?.code === "P2002" &&
+						targets.includes("slug") &&
+						attempt === 0
+					) {
+						continue;
+					}
+
+					if (error?.code === "P2002" && targets.includes("name")) {
+						throw new BadRequestException("Tag name already exists");
+					}
+
+					throw error;
+				}
+			}
+
+			if (!tag) {
+				throw new BadRequestException("Unable to create tag");
+			}
+
+			return { ...tag, isOwned: true };
+		});
+	}
+
+	async update(id: string, userId: string, dto: UpdateTagDto): Promise<any> {
+		await this.ensureTagOwnership(id, userId);
+
+		if (dto.name !== undefined && !dto.name.trim()) {
+			throw new BadRequestException("Tag name is required");
+		}
+
+		const tag = await this.prisma.$transaction(async (tx) => {
+			await this.setAuditUser(tx, userId);
+
+			return tx.tag.update({
+				where: { id },
+				data: {
+					name: dto.name?.trim() ?? undefined,
+					color: dto.color ?? undefined,
+				},
+			});
+		});
+
+		return { ...tag, isOwned: true };
+	}
+
+	async delete(id: string, userId: string): Promise<any> {
+		await this.ensureTagOwnership(id, userId);
+
+		await this.prisma.$transaction(async (tx) => {
+			await this.setAuditUser(tx, userId);
+
+			const tag = await tx.tag.findUnique({ where: { id } });
+			if (!tag) {
+				throw new NotFoundException("Tag not found");
+			}
+
+			await tx.tag.delete({ where: { id } });
+		});
+
+		return { message: "Tag deleted successfully" };
+	}
+
+	async attachTagToHabit(tagId: string, habitId: string, userId: string) {
+		const habit = await this.prisma.habit.findFirst({
+			where: { id: habitId, userId },
+		});
+
+		if (!habit) {
+			throw new NotFoundException("Habit not found");
+		}
+
+		await this.ensureTagAccessible(tagId, userId);
+
+		const tag = await this.prisma.tag.findUnique({ where: { id: tagId } });
+		if (!tag) {
+			throw new NotFoundException("Tag not found");
+		}
+
+		return this.prisma.$transaction(async (tx) => {
+			await this.setAuditUser(tx, userId);
+
+			const existing = await tx.habitTag.findUnique({
+				where: { habitId_tagId: { habitId, tagId } },
+				include: { tag: true },
+			});
+
+			if (existing) {
+				return existing;
+			}
+
+			const created = await tx.habitTag.create({
+				data: { habitId, tagId },
+				include: { tag: true },
+			});
+
+			await tx.tag.update({
+				where: { id: tagId },
+				data: { usageCount: { increment: 1 } },
+			});
+
+			return created;
+		});
+	}
+
+	async detachTagFromHabit(tagId: string, habitId: string, userId: string) {
+		const habit = await this.prisma.habit.findFirst({
+			where: { id: habitId, userId },
+		});
+
+		if (!habit) {
+			throw new NotFoundException("Habit not found");
+		}
+
+		const habitTag = await this.prisma.habitTag.findUnique({
+			where: { habitId_tagId: { habitId, tagId } },
+		});
+
+		if (!habitTag) {
+			return { message: "Tag already detached" };
+		}
+
+		await this.prisma.$transaction(async (tx) => {
+			await this.setAuditUser(tx, userId);
+
+			await tx.habitTag.delete({ where: { id: habitTag.id } });
+
+			const tag = await tx.tag.findUnique({ where: { id: tagId } });
+			const nextCount = Math.max(0, (tag?.usageCount ?? 0) - 1);
+
+			await tx.tag.update({
+				where: { id: tagId },
+				data: { usageCount: nextCount },
+			});
+		});
+
+		return { message: "Tag detached successfully" };
+	}
 }

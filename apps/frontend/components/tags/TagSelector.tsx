@@ -20,7 +20,7 @@ export function TagSelector({
   }
 
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className="grid gap-2 sm:grid-cols-2 max-h-48 overflow-y-auto pr-1">
       {tags.map((tag) => {
         const isChecked = selectedTagIds.includes(tag.id);
         return (

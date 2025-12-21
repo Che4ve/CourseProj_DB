@@ -24,7 +24,7 @@ export function CreateHabitButton({ tags = [] }: CreateHabitButtonProps) {
       <DialogTrigger asChild>
         <Button>Создать привычку</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Новая привычка</DialogTitle>
         </DialogHeader>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useId } from 'react';
+import { useRouter } from 'next/navigation';
 import { createHabit, updateHabit } from '@/app/actions/habitActions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -18,6 +19,7 @@ export function HabitForm({ habit, tags = [], onSuccess }: HabitFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState<HabitType>(habit?.type || 'good');
+  const router = useRouter();
   const nameId = useId();
   const selectedTagIds = habit?.tags?.map((tag) => tag.tagId) ?? [];
 
@@ -31,6 +33,7 @@ export function HabitForm({ habit, tags = [], onSuccess }: HabitFormProps) {
       } else {
         await createHabit(formData);
       }
+      router.refresh();
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка');
@@ -87,30 +90,17 @@ export function HabitForm({ habit, tags = [], onSuccess }: HabitFormProps) {
           </Button>
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="habit-color">Цвет</Label>
-          <input
-            id="habit-color"
-            name="color"
-            type="color"
-            defaultValue={habit?.color ?? '#6366f1'}
-            disabled={loading}
-            className="h-9 w-full rounded-md border border-border"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="habit-priority">Приоритет (0-10)</Label>
-          <Input
-            id="habit-priority"
-            name="priority"
-            type="number"
-            min="0"
-            max="10"
-            defaultValue={habit?.priority ?? 0}
-            disabled={loading}
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="habit-priority">Приоритет (0-10)</Label>
+        <Input
+          id="habit-priority"
+          name="priority"
+          type="number"
+          min="0"
+          max="10"
+          defaultValue={habit?.priority ?? 0}
+          disabled={loading}
+        />
       </div>
       {tags.length > 0 && (
         <div className="space-y-2">

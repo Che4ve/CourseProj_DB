@@ -4,7 +4,7 @@ import type {
   HabitSchedule,
   HabitTag,
   Reminder,
-  Tag,
+  TagWithOwnership,
   UserProfileResponse,
 } from '@/lib/typeDefinitions';
 
@@ -90,7 +90,6 @@ export interface CreateHabitDto {
   name: string;
   type: 'good' | 'bad';
   description?: string;
-  color?: string;
   priority?: number;
 }
 
@@ -98,7 +97,6 @@ export interface UpdateHabitDto {
   name?: string;
   type?: 'good' | 'bad';
   description?: string;
-  color?: string;
   priority?: number;
   isArchived?: boolean;
 }
@@ -113,12 +111,10 @@ export interface CreateCheckinDto {
 
 export interface CreateTagDto {
   name: string;
-  color?: string;
 }
 
 export interface UpdateTagDto {
   name?: string;
-  color?: string;
 }
 
 export interface CreateScheduleDto {
@@ -257,19 +253,19 @@ export const checkinsApi = {
 
 // Tags API
 export const tagsApi = {
-  async getAll(): Promise<Tag[]> {
-    return fetchApi<Tag[]>('/tags');
+  async getAll(): Promise<TagWithOwnership[]> {
+    return fetchApi<TagWithOwnership[]>('/tags');
   },
 
-  async create(data: CreateTagDto): Promise<Tag> {
-    return fetchApi<Tag>('/tags', {
+  async create(data: CreateTagDto): Promise<TagWithOwnership> {
+    return fetchApi<TagWithOwnership>('/tags', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async update(id: string, data: UpdateTagDto): Promise<Tag> {
-    return fetchApi<Tag>(`/tags/${id}`, {
+  async update(id: string, data: UpdateTagDto): Promise<TagWithOwnership> {
+    return fetchApi<TagWithOwnership>(`/tags/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -410,7 +406,5 @@ export const reportsApi = {
 };
 
 export { ApiError };
-
-
 
 

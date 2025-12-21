@@ -1,9 +1,10 @@
 import { getHabits } from '@/app/actions/habitActions';
 import { getCompletions } from '@/app/actions/completionActions';
+import { getTags } from '@/app/actions/tagActions';
 import { HabitCard } from './HabitCard';
 
 export async function HabitList() {
-  const habits = await getHabits();
+  const [habits, tags] = await Promise.all([getHabits(), getTags()]);
 
   if (habits.length === 0) {
     return (
@@ -39,7 +40,7 @@ export async function HabitList() {
         ) : (
           <div className="space-y-4">
             {goodHabits.map(({ habit, completions }) => (
-              <HabitCard key={habit.id} habit={habit} completions={completions} />
+              <HabitCard key={habit.id} habit={habit} completions={completions} allTags={tags} />
             ))}
           </div>
         )}
@@ -61,7 +62,7 @@ export async function HabitList() {
         ) : (
           <div className="space-y-4">
             {badHabits.map(({ habit, completions }) => (
-              <HabitCard key={habit.id} habit={habit} completions={completions} />
+              <HabitCard key={habit.id} habit={habit} completions={completions} allTags={tags} />
             ))}
           </div>
         )}

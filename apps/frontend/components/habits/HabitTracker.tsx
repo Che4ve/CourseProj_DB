@@ -1,8 +1,10 @@
 'use client';
 
 import { useRef, useState, useTransition, useEffect, useOptimistic } from 'react';
-import type { HabitCompletion } from '@/lib/typeDefinitions';
+import type { HabitCheckin } from '@/lib/typeDefinitions';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { useToast } from '@/contexts/ToastContext';
 import { setCompletion } from '@/app/actions/completionActions';
 import {
@@ -17,7 +19,7 @@ import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 interface HabitTrackerProps {
   habitId: string;
-  completions: HabitCompletion[];
+  completions: HabitCheckin[];
   onPendingChange?: (isPending: boolean) => void;
 }
 
@@ -33,7 +35,7 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
 
   // useOptimistic: Set of date-strings
   const [optimisticCompletions, applyCompletion] = useOptimistic(
-    new Set(completions.map((c) => c.completed_at)),
+    new Set(completions.map((c) => formatDate(new Date(c.checkinDate)))),
     (state: Set<string>, action: { date: string; completed: boolean }) => {
       const next = new Set(state);
       if (action.completed) next.add(action.date);
@@ -53,7 +55,14 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
     onPendingChange?.(pendingSet.size > 0);
   }, [pendingSet.size, onPendingChange]);
 
-  const handleDateClick = async (date: Date) => {
+  const [notes, setNotes] = useState('');
+  const [moodRating, setMoodRating] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('');
+
+  const handleDateClick = async (
+    date: Date,
+    details?: { notes?: string; moodRating?: number; durationMinutes?: number }
+  ) => {
     const dateStr = formatDate(date);
     const isCompleted = optimisticCompletions.has(dateStr);
 
@@ -76,7 +85,7 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
 
     // 3) делаем реальную мутацию
     try {
-      await setCompletion(habitId, dateStr, !isCompleted);
+      await setCompletion(habitId, dateStr, !isCompleted, details);
 
       // если это последняя мутация для этой даты — снимаем pending
       if (lastMutationIdRef.current[dateStr] === id) {
@@ -112,7 +121,17 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
 
   const handleTodayClick = () => {
     const todayDate = new Date();
-    handleDateClick(todayDate);
+    const moodValue = moodRating ? Number(moodRating) : undefined;
+    const durationValue = durationMinutes ? Number(durationMinutes) : undefined;
+    const normalizedMood = moodValue !== undefined && Number.isNaN(moodValue) ? undefined : moodValue;
+    const normalizedDuration =
+      durationValue !== undefined && Number.isNaN(durationValue) ? undefined : durationValue;
+    const detailPayload = {
+      notes: notes.trim() || undefined,
+      moodRating: normalizedMood,
+      durationMinutes: normalizedDuration,
+    };
+    handleDateClick(todayDate, detailPayload);
   };
 
   const goToPreviousMonth = () => {
@@ -222,6 +241,40 @@ export function HabitTracker({ habitId, completions, onPendingChange }: HabitTra
       </div>
 
       {/* Большая кнопка "Отметить сегодня" */}
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <Label htmlFor="checkin-notes">Детали отметки</Label>
+        <textarea
+          id="checkin-notes"
+          name="notes"
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          placeholder="Заметки о выполнении"
+          className="min-h-[80px] w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
+        />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label htmlFor="moodRating">Настроение (1-5)</Label>
+            <Input
+              id="moodRating"
+              type="number"
+              min="1"
+              max="5"
+              value={moodRating}
+              onChange={(event) => setMoodRating(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="durationMinutes">Длительность (мин)</Label>
+            <Input
+              id="durationMinutes"
+              type="number"
+              min="1"
+              value={durationMinutes}
+              onChange={(event) => setDurationMinutes(event.target.value)}
+            />
+          </div>
+        </div>
+      </div>
       <Button
         onClick={handleTodayClick}
         disabled={pendingSet.has(getToday())}

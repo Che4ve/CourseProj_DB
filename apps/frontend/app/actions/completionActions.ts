@@ -2,9 +2,9 @@
 
 import { revalidateTag } from 'next/cache';
 import { serverCheckinsApi } from '@/lib/auth/server-api';
-import type { HabitCompletion } from '@/lib/typeDefinitions';
+import type { HabitCheckin } from '@/lib/typeDefinitions';
 
-export async function getCompletions(habitId: string): Promise<HabitCompletion[]> {
+export async function getCompletions(habitId: string): Promise<HabitCheckin[]> {
   try {
     return await serverCheckinsApi.getByHabit(habitId);
   } catch (error) {
@@ -19,14 +19,23 @@ export async function getCompletions(habitId: string): Promise<HabitCompletion[]
  * @param date - Дата в формате YYYY-MM-DD
  * @param completed - true для установки выполнения, false для удаления
  */
-export async function setCompletion(habitId: string, date: string, completed: boolean) {
+export async function setCompletion(
+  habitId: string,
+  date: string,
+  completed: boolean,
+  details?: { notes?: string; moodRating?: number; durationMinutes?: number }
+) {
   // Валидация формата даты (YYYY-MM-DD)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw new Error('Неверный формат даты');
   }
 
   try {
-    await serverCheckinsApi.toggle(habitId, date, completed);
+    if (completed) {
+      await serverCheckinsApi.create({ habitId, date, ...details });
+    } else {
+      await serverCheckinsApi.delete(habitId, date);
+    }
     // Точечная инвалидация кэша для конкретной привычки
     revalidateTag(`habit-${habitId}`);
     revalidateTag('habits-list');

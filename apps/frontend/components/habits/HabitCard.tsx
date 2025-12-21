@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { Habit, HabitCompletion } from '@/lib/typeDefinitions';
+import type { Habit, HabitCheckin, Tag } from '@/lib/typeDefinitions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -23,23 +23,43 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { HabitForm } from './HabitForm';
 import { HabitTracker } from './HabitTracker';
 import { deleteHabit } from '@/app/actions/habitActions';
-import { calculateStreak } from '@/lib/utils/dateUtils';
+import { calculateStreak, formatDate } from '@/lib/utils/dateUtils';
 import { LucideCalendar } from 'lucide-react';
+import { TagBadge } from '@/components/tags/TagBadge';
+import { ScheduleForm } from '@/components/schedules/ScheduleForm';
+import { ScheduleList } from '@/components/schedules/ScheduleList';
+import { ReminderForm } from '@/components/reminders/ReminderForm';
+import { ReminderList } from '@/components/reminders/ReminderList';
 
 interface HabitCardProps {
   habit: Habit;
-  completions: HabitCompletion[];
+  completions: HabitCheckin[];
+  allTags: Tag[];
 }
 
-export function HabitCard({ habit, completions }: HabitCardProps) {
+export function HabitCard({ habit, completions, allTags }: HabitCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [trackerOpen, setTrackerOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [trackerPending, setTrackerPending] = useState(false);
   const [closeTrackerConfirmOpen, setCloseTrackerConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
-  const streak = calculateStreak(completions.map((c) => c.completed_at));
+  const completionDates = completions.map((c) => formatDate(new Date(c.checkinDate)));
+  const streak = habit.stats?.currentStreak ?? calculateStreak(completionDates);
+  const completionRateRaw = habit.stats?.completionRate;
+  const completionRateParsed =
+    completionRateRaw === null || completionRateRaw === undefined
+      ? null
+      : Number(completionRateRaw);
+  const completionRate =
+    completionRateParsed !== null && Number.isNaN(completionRateParsed) ? null : completionRateParsed;
+  const habitTags =
+    habit.tags?.map((tagLink) => tagLink.tag).filter((tag): tag is Tag => Boolean(tag)) ?? [];
+  const schedules = habit.schedules ?? [];
+  const reminders = habit.reminders ?? [];
 
   // Обработчик для попытки закрыть модалку трекера
   const handleTrackerOpenChange = (open: boolean) => {
@@ -106,7 +126,68 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
           </DropdownMenu>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {habit.description && (
+          <p className="text-sm text-muted-foreground">{habit.description}</p>
+        )}
+
+        {habitTags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {habitTags.map((tag) => (
+              <TagBadge key={tag.id} tag={tag} />
+            ))}
+          </div>
+        )}
+
+        {(completionRate !== null || habit.stats?.longestStreak) && (
+          <div className="flex flex-wrap gap-2 text-sm">
+            {completionRate !== null && (
+              <Badge variant="outline">✅ {completionRate.toFixed(1)}%</Badge>
+            )}
+            {habit.stats?.longestStreak ? (
+              <Badge variant="outline">
+                Лучшая серия: {habit.stats.longestStreak} дней
+              </Badge>
+            ) : null}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Расписание</span>
+            <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">Добавить</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Новое расписание</DialogTitle>
+                </DialogHeader>
+                <ScheduleForm habitId={habit.id} onSuccess={() => setScheduleOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
+          <ScheduleList habitId={habit.id} schedules={schedules} />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Напоминания</span>
+            <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">Добавить</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Новое напоминание</DialogTitle>
+                </DialogHeader>
+                <ReminderForm habitId={habit.id} onSuccess={() => setReminderOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
+          <ReminderList habitId={habit.id} reminders={reminders} />
+        </div>
+
         <Dialog open={trackerOpen} onOpenChange={handleTrackerOpenChange}>
           <DialogTrigger asChild>
             <Button variant="outline" className="w-full">
@@ -130,7 +211,7 @@ export function HabitCard({ habit, completions }: HabitCardProps) {
             <DialogHeader>
               <DialogTitle>Изменить привычку</DialogTitle>
             </DialogHeader>
-            <HabitForm habit={habit} onSuccess={() => setEditOpen(false)} />
+            <HabitForm habit={habit} tags={allTags} onSuccess={() => setEditOpen(false)} />
           </DialogContent>
         </Dialog>
 

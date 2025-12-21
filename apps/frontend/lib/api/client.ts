@@ -1,4 +1,12 @@
-import type { Habit, HabitCompletion } from '@/lib/typeDefinitions';
+import type {
+  Habit,
+  HabitCheckin,
+  HabitSchedule,
+  HabitTag,
+  Reminder,
+  Tag,
+  UserProfileResponse,
+} from '@/lib/typeDefinitions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -55,6 +63,7 @@ async function fetchApi<T>(
 export interface RegisterDto {
   email: string;
   password: string;
+  fullName: string;
 }
 
 export interface LoginDto {
@@ -63,36 +72,99 @@ export interface LoginDto {
 }
 
 export interface AuthResponse {
-  accessToken: string;
+  access_token: string;
   user: {
     id: string;
     email: string;
-    createdAt: string;
+    fullName: string;
   };
 }
 
 export interface User {
   id: string;
   email: string;
-  createdAt: string;
+  fullName: string;
 }
 
 export interface CreateHabitDto {
   name: string;
   type: 'good' | 'bad';
   description?: string;
+  color?: string;
+  priority?: number;
 }
 
 export interface UpdateHabitDto {
   name?: string;
   type?: 'good' | 'bad';
   description?: string;
+  color?: string;
+  priority?: number;
+  isArchived?: boolean;
 }
 
 export interface CreateCheckinDto {
   habitId: string;
   date: string; // YYYY-MM-DD
   notes?: string;
+  moodRating?: number;
+  durationMinutes?: number;
+}
+
+export interface CreateTagDto {
+  name: string;
+  color?: string;
+}
+
+export interface UpdateTagDto {
+  name?: string;
+  color?: string;
+}
+
+export interface CreateScheduleDto {
+  habitId: string;
+  frequencyType: string;
+  frequencyValue?: number;
+  weekdaysMask?: number;
+  startDate: string;
+  endDate?: string | null;
+  isActive?: boolean;
+}
+
+export interface UpdateScheduleDto {
+  frequencyType?: string;
+  frequencyValue?: number;
+  weekdaysMask?: number;
+  startDate?: string;
+  endDate?: string | null;
+  isActive?: boolean;
+}
+
+export interface CreateReminderDto {
+  habitId: string;
+  reminderTime: string;
+  daysOfWeek?: number;
+  notificationText?: string;
+  deliveryMethod?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateReminderDto {
+  reminderTime?: string;
+  daysOfWeek?: number;
+  notificationText?: string;
+  deliveryMethod?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateProfileDto {
+  fullName?: string;
+  bio?: string;
+  avatarUrl?: string;
+  timezone?: string;
+  dateOfBirth?: string | null;
+  notificationEnabled?: boolean;
+  themePreference?: number;
 }
 
 // Auth API
@@ -157,12 +229,12 @@ export const habitsApi = {
 
 // Checkins API
 export const checkinsApi = {
-  async getByHabit(habitId: string): Promise<HabitCompletion[]> {
-    return fetchApi<HabitCompletion[]>(`/checkins/habit/${habitId}`);
+  async getByHabit(habitId: string): Promise<HabitCheckin[]> {
+    return fetchApi<HabitCheckin[]>(`/checkins/habit/${habitId}`);
   },
 
-  async create(data: CreateCheckinDto): Promise<HabitCompletion> {
-    return fetchApi<HabitCompletion>('/checkins', {
+  async create(data: CreateCheckinDto): Promise<HabitCheckin> {
+    return fetchApi<HabitCheckin>('/checkins', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -180,6 +252,160 @@ export const checkinsApi = {
     } else {
       await checkinsApi.delete(habitId, date);
     }
+  },
+};
+
+// Tags API
+export const tagsApi = {
+  async getAll(): Promise<Tag[]> {
+    return fetchApi<Tag[]>('/tags');
+  },
+
+  async create(data: CreateTagDto): Promise<Tag> {
+    return fetchApi<Tag>('/tags', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async update(id: string, data: UpdateTagDto): Promise<Tag> {
+    return fetchApi<Tag>(`/tags/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    return fetchApi<void>(`/tags/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async attach(tagId: string, habitId: string): Promise<HabitTag> {
+    return fetchApi<HabitTag>(`/tags/${tagId}/habits/${habitId}`, {
+      method: 'POST',
+    });
+  },
+
+  async detach(tagId: string, habitId: string): Promise<void> {
+    return fetchApi<void>(`/tags/${tagId}/habits/${habitId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Schedules API
+export const schedulesApi = {
+  async getByHabit(habitId: string): Promise<HabitSchedule[]> {
+    return fetchApi<HabitSchedule[]>(`/schedules/habit/${habitId}`);
+  },
+
+  async create(data: CreateScheduleDto): Promise<HabitSchedule> {
+    return fetchApi<HabitSchedule>('/schedules', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async update(id: string, data: UpdateScheduleDto): Promise<HabitSchedule> {
+    return fetchApi<HabitSchedule>(`/schedules/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    return fetchApi<void>(`/schedules/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Reminders API
+export const remindersApi = {
+  async getByHabit(habitId: string): Promise<Reminder[]> {
+    return fetchApi<Reminder[]>(`/reminders/habit/${habitId}`);
+  },
+
+  async create(data: CreateReminderDto): Promise<Reminder> {
+    return fetchApi<Reminder>('/reminders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async update(id: string, data: UpdateReminderDto): Promise<Reminder> {
+    return fetchApi<Reminder>(`/reminders/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    return fetchApi<void>(`/reminders/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Profile API
+export const profileApi = {
+  async getProfile(): Promise<UserProfileResponse> {
+    return fetchApi<UserProfileResponse>('/users/profile');
+  },
+
+  async updateProfile(data: UpdateProfileDto): Promise<UserProfileResponse> {
+    return fetchApi<UserProfileResponse>('/users/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+// Reports API
+export const reportsApi = {
+  async getHabitsReport(from?: string, to?: string) {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const query = params.toString();
+    return fetchApi<Array<{
+      habit_id: string;
+      habit_name: string;
+      habit_type: string;
+      total_checkins: number;
+      completion_rate: number;
+      last_checkin: string | null;
+    }>>(`/reports/habits${query ? `?${query}` : ''}`);
+  },
+
+  async getDailyStats(days?: number) {
+    const query = days ? `?days=${days}` : '';
+    return fetchApi<Array<{
+      date: string;
+      total_checkins: number;
+      unique_habits: number;
+      avg_mood: number | null;
+      total_duration: number | null;
+    }>>(`/reports/daily-stats${query}`);
+  },
+
+  async getCompletionRate(from?: string, to?: string) {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const query = params.toString();
+    return fetchApi<{ completionRate: number }>(`/reports/completion-rate${query ? `?${query}` : ''}`);
+  },
+
+  async getStreaks() {
+    return fetchApi<Array<{
+      habit_id: string;
+      habit_name: string;
+      current_streak: number;
+      longest_streak: number;
+      last_checkin: string | null;
+    }>>('/reports/streaks');
   },
 };
 

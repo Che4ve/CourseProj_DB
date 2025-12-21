@@ -5,18 +5,21 @@ import { createHabit, updateHabit } from '@/app/actions/habitActions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import type { Habit, HabitType } from '@/lib/typeDefinitions';
+import type { Habit, HabitType, Tag } from '@/lib/typeDefinitions';
+import { TagSelector } from '@/components/tags/TagSelector';
 
 interface HabitFormProps {
   habit?: Habit;
+  tags?: Tag[];
   onSuccess: () => void;
 }
 
-export function HabitForm({ habit, onSuccess }: HabitFormProps) {
+export function HabitForm({ habit, tags = [], onSuccess }: HabitFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState<HabitType>(habit?.type || 'good');
   const nameId = useId();
+  const selectedTagIds = habit?.tags?.map((tag) => tag.tagId) ?? [];
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -50,6 +53,17 @@ export function HabitForm({ habit, onSuccess }: HabitFormProps) {
         />
       </div>
       <div className="space-y-2">
+        <Label htmlFor="habit-description">Описание</Label>
+        <textarea
+          id="habit-description"
+          name="description"
+          placeholder="Коротко опишите привычку"
+          defaultValue={habit?.description ?? ''}
+          disabled={loading}
+          className="min-h-[80px] w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
+        />
+      </div>
+      <div className="space-y-2">
         <Label>Тип привычки</Label>
         <input type="hidden" name="type" value={type} />
         <div className="flex gap-2">
@@ -73,6 +87,37 @@ export function HabitForm({ habit, onSuccess }: HabitFormProps) {
           </Button>
         </div>
       </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="habit-color">Цвет</Label>
+          <input
+            id="habit-color"
+            name="color"
+            type="color"
+            defaultValue={habit?.color ?? '#6366f1'}
+            disabled={loading}
+            className="h-9 w-full rounded-md border border-border"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="habit-priority">Приоритет (0-10)</Label>
+          <Input
+            id="habit-priority"
+            name="priority"
+            type="number"
+            min="0"
+            max="10"
+            defaultValue={habit?.priority ?? 0}
+            disabled={loading}
+          />
+        </div>
+      </div>
+      {tags.length > 0 && (
+        <div className="space-y-2">
+          <Label>Теги</Label>
+          <TagSelector tags={tags} selectedTagIds={selectedTagIds} disabled={loading} />
+        </div>
+      )}
       {error && <div className="text-sm text-red-500">{error}</div>}
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? 'Сохранение...' : habit ? 'Обновить' : 'Создать'}

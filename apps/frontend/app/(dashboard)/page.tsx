@@ -1,31 +1,23 @@
 import { Suspense } from 'react';
 import { HabitList } from '@/components/habits/HabitList';
 import { CreateHabitButton } from '@/components/habits/CreateHabitButton';
-import { LogoutButton } from '@/components/auth/LogoutButton';
-import { serverAuthApi } from '@/lib/auth/server-api';
+import { getTags } from '@/app/actions/tagActions';
 
 export default async function DashboardPage() {
-  const user = await serverAuthApi.getMe();
+  const tags = await getTags();
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Трекер привычек</h1>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
-          </div>
-          <div className="flex gap-2">
-            <CreateHabitButton />
-            <LogoutButton />
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">Мои привычки</h2>
+          <p className="text-sm text-muted-foreground">Создавайте, отслеживайте и анализируйте.</p>
         </div>
-      </header>
-      <main className="container mx-auto px-4 py-8">
-        <Suspense fallback={<div className="text-center py-12">Загрузка...</div>}>
-          <HabitList />
-        </Suspense>
-      </main>
+        <CreateHabitButton tags={tags} />
+      </div>
+      <Suspense fallback={<div className="text-center py-12">Загрузка...</div>}>
+        <HabitList />
+      </Suspense>
     </div>
   );
 }

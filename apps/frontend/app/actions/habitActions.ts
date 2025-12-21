@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidateTag } from 'next/cache';
-import { serverHabitsApi } from '@/lib/auth/server-api';
+import { serverHabitsApi, serverTagsApi } from '@/lib/auth/server-api';
 import type { Habit, HabitType } from '@/lib/typeDefinitions';
 
 export async function getHabits(): Promise<Habit[]> {
@@ -17,13 +17,20 @@ export async function createHabit(formData: FormData) {
   const name = formData.get('name') as string;
   const type = formData.get('type') as HabitType;
   const description = formData.get('description') as string | undefined;
+  const color = (formData.get('color') as string | null) || undefined;
+  const priorityRaw = formData.get('priority') as string | null;
+  const priority = priorityRaw ? Number(priorityRaw) : undefined;
+  const tagIds = formData.getAll('tagIds') as string[];
 
   if (!name || !type) {
     throw new Error('Заполните все поля');
   }
 
   try {
-    await serverHabitsApi.create({ name, type, description });
+    const habit = await serverHabitsApi.create({ name, type, description, color, priority });
+    if (tagIds.length > 0) {
+      await Promise.all(tagIds.map((tagId) => serverTagsApi.attach(tagId, habit.id)));
+    }
     revalidateTag('habits-list');
   } catch (error) {
     console.error('Error creating habit:', error);
@@ -35,13 +42,30 @@ export async function updateHabit(id: string, formData: FormData) {
   const name = formData.get('name') as string;
   const type = formData.get('type') as HabitType;
   const description = formData.get('description') as string | undefined;
+  const color = (formData.get('color') as string | null) || undefined;
+  const priorityRaw = formData.get('priority') as string | null;
+  const priority = priorityRaw ? Number(priorityRaw) : undefined;
+  const tagIds = formData.getAll('tagIds') as string[];
 
   if (!name || !type) {
     throw new Error('Заполните все поля');
   }
 
   try {
-    await serverHabitsApi.update(id, { name, type, description });
+    await serverHabitsApi.update(id, { name, type, description, color, priority });
+
+    const habit = await serverHabitsApi.getOne(id);
+    const existingTagIds = habit.tags?.map((tag) => tag.tagId) ?? [];
+    const toAttach = tagIds.filter((tagId) => !existingTagIds.includes(tagId));
+    const toDetach = existingTagIds.filter((tagId) => !tagIds.includes(tagId));
+
+    if (toAttach.length > 0) {
+      await Promise.all(toAttach.map((tagId) => serverTagsApi.attach(tagId, id)));
+    }
+    if (toDetach.length > 0) {
+      await Promise.all(toDetach.map((tagId) => serverTagsApi.detach(tagId, id)));
+    }
+
     revalidateTag('habits-list');
     revalidateTag(`habit-${id}`);
   } catch (error) {

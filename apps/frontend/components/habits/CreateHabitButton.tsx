@@ -10,8 +10,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/Dialog';
 import { HabitForm } from './HabitForm';
+import type { Tag } from '@/lib/typeDefinitions';
 
-export function CreateHabitButton() {
+interface CreateHabitButtonProps {
+  tags?: Tag[];
+}
+
+export function CreateHabitButton({ tags = [] }: CreateHabitButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -23,7 +28,7 @@ export function CreateHabitButton() {
         <DialogHeader>
           <DialogTitle>Новая привычка</DialogTitle>
         </DialogHeader>
-        <HabitForm onSuccess={() => setOpen(false)} />
+        <HabitForm tags={tags} onSuccess={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );

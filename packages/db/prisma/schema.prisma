@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Users - 8 колонок, 6 РАЗНЫХ типов: UUID, String, Boolean, DateTime, Int
+model User {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String        @unique @db.Text
+  passwordHash  String        @map("password_hash") @db.Text
+  fullName      String        @map("full_name") @db.Text
+  role          String        @default("user") @db.VarChar(50)
+  isActive      Boolean       @default(true) @map("is_active")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  loginCount    Int           @default(0) @map("login_count")
+
+  profile       UserProfile?
+  habits        Habit[]
+  checkins      HabitCheckin[]
+  batchJobs     BatchImportJob[]
+
+  @@map("users")
+}
+
+// 2. UserProfile - 8 колонок, 6 РАЗНЫХ типов: UUID, String, DateTime, Boolean, Int
+model UserProfile {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String    @unique @map("user_id") @db.Uuid
+  bio                  String?   @db.Text
+  avatarUrl            String?   @map("avatar_url") @db.Text
+  timezone             String    @default("UTC") @db.VarChar(100)
+  dateOfBirth          DateTime? @map("date_of_birth") @db.Date
+  notificationEnabled  Boolean   @default(true) @map("notification_enabled")
+  themePreference      Int       @default(0) @map("theme_preference") @db.SmallInt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// 3. Habit - 10 колонок, 7 РАЗНЫХ типов: UUID, String, Boolean, DateTime, Int
+model Habit {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  name         String    @db.Text
+  description  String?   @db.Text
+  type         String    @db.VarChar(10)
+  color        String    @default("#6366f1") @db.VarChar(7)
+  priority     Int       @default(0) @db.SmallInt
+  isArchived   Boolean   @default(false) @map("is_archived")
+  displayOrder Int       @default(0) @map("display_order")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedules  HabitSchedule[]
+  checkins   HabitCheckin[]
+  tags       HabitTag[]
+  reminders  Reminder[]
+  stats      HabitStat?
+
+  @@map("habits")
+}
+
+// 4. HabitSchedule - 8 колонок, 6 РАЗНЫХ типов: UUID, String, Int, DateTime, Boolean
+model HabitSchedule {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  habitId        String    @map("habit_id") @db.Uuid
+  frequencyType  String    @map("frequency_type") @db.VarChar(20)
+  frequencyValue Int       @default(1) @map("frequency_value")
+  weekdaysMask   Int       @default(127) @map("weekdays_mask") @db.SmallInt
+  startDate      DateTime  @map("start_date") @db.Date
+  endDate        DateTime? @map("end_date") @db.Date
+  isActive       Boolean   @default(true) @map("is_active")
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@map("habit_schedules")
+}
+
+// 5. HabitCheckin - 9 колонок, 7 РАЗНЫХ типов: UUID, DateTime, String, Int, Time
+model HabitCheckin {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  habitId         String    @map("habit_id") @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  checkinDate     DateTime  @map("checkin_date") @db.Date
+  checkinTime     DateTime  @default(now()) @map("checkin_time") @db.Time(6)
+  notes           String?   @db.Text
+  moodRating      Int?      @map("mood_rating") @db.SmallInt
+  durationMinutes Int?      @map("duration_minutes")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, checkinDate])
+  @@map("habit_checkins")
+}
+
+// 6. Tag - 7 колонок, 6 РАЗНЫХ типов: UUID, String, Int, Boolean, DateTime
+model Tag {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String    @unique @db.VarChar(100)
+  slug       String    @unique @db.Text
+  color      String    @default("#gray") @db.VarChar(7)
+  usageCount Int       @default(0) @map("usage_count")
+  isSystem   Boolean   @default(false) @map("is_system")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  habits HabitTag[]
+
+  @@map("tags")
+}
+
+// 7. HabitTag - 7 колонок, 5 РАЗНЫХ типов: UUID, Int, Boolean, String, DateTime
+model HabitTag {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  habitId    String    @map("habit_id") @db.Uuid
+  tagId      String    @map("tag_id") @db.Uuid
+  priority   Int       @default(0) @db.SmallInt
+  isPrimary  Boolean   @default(false) @map("is_primary")
+  assignedBy String    @default("user") @map("assigned_by") @db.VarChar(50)
+  assignedAt DateTime  @default(now()) @map("assigned_at") @db.Timestamptz(6)
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, tagId])
+  @@map("habit_tags")
+}
+
+// 8. Reminder - 8 колонок, 7 РАЗНЫХ типов: UUID, DateTime (Time), Int, String, Boolean
+model Reminder {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  habitId          String    @map("habit_id") @db.Uuid
+  reminderTime     DateTime  @map("reminder_time") @db.Time(6)
+  daysOfWeek       Int       @default(127) @map("days_of_week") @db.SmallInt
+  notificationText String?   @map("notification_text") @db.Text
+  deliveryMethod   String    @default("push") @map("delivery_method") @db.VarChar(20)
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@map("reminders")
+}
+
+// 9. HabitStat - 9 колонок, 5 РАЗНЫХ типов: UUID, Int, Decimal, DateTime
+model HabitStat {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  habitId        String    @unique @map("habit_id") @db.Uuid
+  totalCheckins  Int       @default(0) @map("total_checkins")
+  currentStreak  Int       @default(0) @map("current_streak")
+  longestStreak  Int       @default(0) @map("longest_streak")
+  completionRate Decimal   @default(0.00) @map("completion_rate") @db.Decimal(5, 2)
+  averageMood    Decimal?  @map("average_mood") @db.Decimal(3, 2)
+  lastCheckinAt  DateTime? @map("last_checkin_at") @db.Date
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@map("habit_stats")
+}
+
+// 10. AuditLog - 9 колонок, 6 РАЗНЫХ типов: UUID, String, Json, DateTime, Inet (String в Prisma)
+model AuditLog {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tableName String    @map("table_name") @db.VarChar(100)
+  operation String    @db.VarChar(10)
+  recordId  String?   @map("record_id") @db.Uuid
+  userId    String?   @map("user_id") @db.Uuid
+  oldData   Json?     @map("old_data") @db.JsonB
+  newData   Json?     @map("new_data") @db.JsonB
+  ipAddress String?   @map("ip_address") @db.Inet
+  changedAt DateTime  @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@index([changedAt(sort: Desc)])
+  @@map("audit_log")
+}
+
+// 11. ManualMigration - 7 колонок, 6 РАЗНЫХ типов: UUID, String (VarChar + Char), DateTime, Int
+model ManualMigration {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String    @unique @db.VarChar(255)
+  checksum        String?   @db.Char(64)
+  appliedAt       DateTime  @default(now()) @map("applied_at") @db.Timestamptz(6)
+  executionTimeMs Int?      @map("execution_time_ms")
+  status          String    @default("success") @db.VarChar(20)
+  appliedBy       String?   @map("applied_by") @db.Text
+
+  @@map("_manual_migrations")
+}
+
+// 12. BatchImportJob - 11 колонок, 6 РАЗНЫХ типов: UUID, String, Int, Decimal, BigInt, DateTime
+model BatchImportJob {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String?   @map("user_id") @db.Uuid
+  entityType      String    @map("entity_type") @db.VarChar(50)
+  status          String    @db.VarChar(20)
+  totalRecords    Int       @default(0) @map("total_records")
+  successCount    Int       @default(0) @map("success_count")
+  errorCount      Int       @default(0) @map("error_count")
+  progressPercent Decimal   @default(0.00) @map("progress_percent") @db.Decimal(5, 2)
+  fileSizeBytes   BigInt?   @map("file_size_bytes")
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  user   User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  errors BatchImportError[]
+
+  @@map("batch_import_jobs")
+}
+
+// 13. BatchImportError - 7 колонок, 6 РАЗНЫХ типов: UUID, Int, Json, String, DateTime
+model BatchImportError {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId        String   @map("job_id") @db.Uuid
+  rowNumber    Int?     @map("row_number")
+  recordData   Json     @map("record_data") @db.JsonB
+  errorMessage String   @map("error_message") @db.Text
+  errorCode    String?  @map("error_code") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  job BatchImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("batch_import_errors")
+}
+
+

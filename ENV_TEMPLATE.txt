@@ -1,0 +1,38 @@
+# ============================================
+# ШАБЛОН ПЕРЕМЕННЫХ ОКРУЖЕНИЯ
+# ============================================
+# 
+# Скопируйте этот файл в .env в корне проекта
+# и замените значения на реальные
+#
+# ВАЖНО: Измените JWT_SECRET на случайную строку!
+# ============================================
+
+# Database Configuration
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/habit_tracker
+
+# JWT Secret (ОБЯЗАТЕЛЬНО измените это значение!)
+# Для генерации: openssl rand -hex 32
+JWT_SECRET=change-me-to-a-random-secret-key-at-least-32-characters
+
+# Backend Configuration
+PORT=3001
+NODE_ENV=development
+
+# Frontend Configuration  
+NEXT_PUBLIC_API_URL=http://localhost:3001
+API_URL=http://localhost:3001
+
+# ============================================
+# ДЛЯ PRODUCTION
+# ============================================
+# 
+# 1. Замените JWT_SECRET на сгенерированный:
+#    openssl rand -hex 32
+#
+# 2. Используйте безопасный пароль для БД
+#
+# 3. Настройте CORS для вашего домена
+#
+# ============================================
+

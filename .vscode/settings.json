@@ -1,20 +1,40 @@
 {
-  "editor.defaultFormatter": "biomejs.biome",
-  "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[javascriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[json]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[html]": { "editor.defaultFormatter": "biomejs.biome" },
-  "[css]": { "editor.defaultFormatter": "biomejs.biome" },
-  "formattingToggle.affects": [
-    "editor.formatOnSave",
-    "editor.formatOnPaste",
-    "editor.formatOnType"
-  ],
-  "git.useCommitInputAsStashMessage": true,
-  "git.enableSmartCommit": true,
-  "git.confirmSync": false,
-  "git.autofetch": true
+	"editor.defaultFormatter": "biomejs.biome",
+	"[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
+	"[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+	"[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
+	"[javascriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+	"[json]": { "editor.defaultFormatter": "biomejs.biome" },
+	"[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
+	"[html]": { "editor.defaultFormatter": "biomejs.biome" },
+	"[css]": { "editor.defaultFormatter": "biomejs.biome" },
+	"formattingToggle.affects": [
+		"editor.formatOnSave",
+		"editor.formatOnPaste",
+		"editor.formatOnType"
+	],
+	"git.useCommitInputAsStashMessage": true,
+	"git.enableSmartCommit": true,
+	"git.confirmSync": false,
+	"git.autofetch": true,
+	"tailwindCSS.experimental.classRegex": [
+		["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+		["cn\\(([^)]*)\\)", "(?:'|\"|`)([^\"'`]*)(?:'|\"|`)"],
+		["className\\s*[:=]\\s*[\"'`]([^\"'`]*)[\"'`]"]
+	],
+	"tailwindCSS.includeLanguages": {
+		"typescript": "javascript",
+		"typescriptreact": "javascript"
+	},
+	"tailwindCSS.files.exclude": [
+		"**/.git/**",
+		"**/node_modules/**",
+		"**/.next/**",
+		"**/dist/**"
+	],
+	"editor.quickSuggestions": {
+		"strings": true
+	},
+	"css.validate": false,
+	"tailwindCSS.experimental.configFile": null
 }

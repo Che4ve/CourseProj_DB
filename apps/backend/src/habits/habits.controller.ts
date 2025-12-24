@@ -1,7 +1,20 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { HabitsService, CreateHabitDto, UpdateHabitDto } from './habits.service';
+import { HabitsService } from './habits.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateHabitDto } from './dto/create-habit.dto';
+import { UpdateHabitDto } from './dto/update-habit.dto';
 
 @ApiTags('habits')
 @Controller('habits')
@@ -18,7 +31,7 @@ export class HabitsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get habit by ID' })
-  async findOne(@Param('id') id: string, @Request() req): Promise<any> {
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req): Promise<any> {
     return this.habitsService.findOne(id, req.user.id);
   }
 
@@ -30,15 +43,14 @@ export class HabitsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update habit' })
-  async update(@Param('id') id: string, @Body() dto: UpdateHabitDto, @Request() req) {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateHabitDto, @Request() req) {
     return this.habitsService.update(id, req.user.id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete habit' })
-  async delete(@Param('id') id: string, @Request() req) {
+  async delete(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
     return this.habitsService.delete(id, req.user.id);
   }
 }
-
 

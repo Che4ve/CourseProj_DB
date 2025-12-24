@@ -1,7 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { SchedulesService, CreateScheduleDto, UpdateScheduleDto } from './schedules.service';
+import { SchedulesService } from './schedules.service';
+import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @ApiTags('schedules')
 @Controller('schedules')
@@ -12,7 +25,7 @@ export class SchedulesController {
 
   @Get('habit/:habitId')
   @ApiOperation({ summary: 'Get schedules for a habit' })
-  async findByHabit(@Param('habitId') habitId: string, @Request() req) {
+  async findByHabit(@Param('habitId', ParseUUIDPipe) habitId: string, @Request() req) {
     return this.schedulesService.findByHabit(habitId, req.user.id);
   }
 
@@ -24,13 +37,13 @@ export class SchedulesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update schedule' })
-  async update(@Param('id') id: string, @Body() dto: UpdateScheduleDto, @Request() req) {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateScheduleDto, @Request() req) {
     return this.schedulesService.update(id, req.user.id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete schedule' })
-  async delete(@Param('id') id: string, @Request() req) {
+  async delete(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
     return this.schedulesService.delete(id, req.user.id);
   }
 }

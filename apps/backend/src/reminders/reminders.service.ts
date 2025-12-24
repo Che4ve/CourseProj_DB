@@ -1,22 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
-export interface CreateReminderDto {
-  habitId: string;
-  reminderTime: string | Date;
-  daysOfWeek?: number;
-  notificationText?: string;
-  deliveryMethod?: string;
-  isActive?: boolean;
-}
-
-export interface UpdateReminderDto {
-  reminderTime?: string | Date;
-  daysOfWeek?: number;
-  notificationText?: string;
-  deliveryMethod?: string;
-  isActive?: boolean;
-}
+import { CreateReminderDto } from './dto/create-reminder.dto';
+import { UpdateReminderDto } from './dto/update-reminder.dto';
 
 @Injectable()
 export class RemindersService {

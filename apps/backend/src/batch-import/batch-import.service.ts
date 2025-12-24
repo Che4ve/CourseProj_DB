@@ -1,11 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@repo/db';
 import { PrismaService } from '../prisma/prisma.service';
-
-export interface BatchImportDto {
-  entityType: 'habits' | 'checkins' | 'tags';
-  data: any[];
-}
+import { BatchImportDto, BatchImportEntityType } from './dto/batch-import.dto';
 
 @Injectable()
 export class BatchImportService {
@@ -13,6 +9,9 @@ export class BatchImportService {
 
   private static readonly UUID_REGEX =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  private static readonly MAX_BATCH_SIZE = 1000;
+  private static readonly MAX_PAYLOAD_BYTES = 200 * 1024;
+  private static readonly TRANSACTION_TIMEOUT_MS = 30_000;
 
   private slugify(value: string): string {
     return value
@@ -138,6 +137,25 @@ export class BatchImportService {
   }
 
   async importData(userId: string, dto: BatchImportDto) {
+    if (!dto || !Array.isArray(dto.data)) {
+      throw new BadRequestException('Batch payload must be an array');
+    }
+
+    if (!Object.values(BatchImportEntityType).includes(dto.entityType)) {
+      throw new BadRequestException('Invalid batch entity type');
+    }
+
+    if (dto.data.length > BatchImportService.MAX_BATCH_SIZE) {
+      throw new BadRequestException(
+        `Batch size exceeds ${BatchImportService.MAX_BATCH_SIZE} records`,
+      );
+    }
+
+    const payloadBytes = Buffer.byteLength(JSON.stringify(dto.data));
+    if (payloadBytes > BatchImportService.MAX_PAYLOAD_BYTES) {
+      throw new BadRequestException('Batch payload is too large');
+    }
+
     // Создаём batch job
     const job = await this.prisma.batchImportJob.create({
       data: {
@@ -145,7 +163,7 @@ export class BatchImportService {
         entityType: dto.entityType,
         status: 'processing',
         totalRecords: dto.data.length,
-        fileSizeBytes: BigInt(JSON.stringify(dto.data).length),
+        fileSizeBytes: BigInt(payloadBytes),
       },
     });
 
@@ -183,7 +201,8 @@ export class BatchImportService {
         }> = [];
 
         dto.data.forEach((record, index) => {
-          const name = typeof record?.name === 'string' ? record.name.trim() : '';
+          const entry = record as Record<string, unknown>;
+          const name = typeof entry.name === 'string' ? entry.name.trim() : '';
           if (!name) {
             validationErrors.push({
               rowNumber: index + 1,
@@ -194,24 +213,27 @@ export class BatchImportService {
             return;
           }
 
-          const type = record?.type === 'bad' ? 'bad' : 'good';
-          const priority = this.parseNumber(record?.priority) ?? 0;
+          const type = entry.type === 'bad' ? 'bad' : 'good';
+          const priority = this.parseNumber(entry.priority) ?? 0;
 
           records.push({
             name,
             description:
-              typeof record?.description === 'string' ? record.description : null,
+              typeof entry.description === 'string' ? entry.description : null,
             type,
-            color: typeof record?.color === 'string' ? record.color : '#6366f1',
+            color: typeof entry.color === 'string' ? entry.color : '#6366f1',
             priority,
           });
         });
 
         if (records.length > 0) {
-          successCount = await this.prisma.$transaction(async (tx) => {
-            await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
-            return this.insertHabits(tx, userId, records);
-          });
+          successCount = await this.prisma.$transaction(
+            async (tx) => {
+              await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
+              return this.insertHabits(tx, userId, records);
+            },
+            { timeout: BatchImportService.TRANSACTION_TIMEOUT_MS },
+          );
         }
       } else if (dto.entityType === 'checkins') {
         const habitIds = habitIdSet ?? new Set<string>();
@@ -224,8 +246,9 @@ export class BatchImportService {
         }> = [];
 
         dto.data.forEach((record, index) => {
+          const entry = record as Record<string, unknown>;
           const habitId =
-            typeof record?.habitId === 'string' ? record.habitId : '';
+            typeof entry.habitId === 'string' ? entry.habitId : '';
           if (
             !habitId ||
             !BatchImportService.UUID_REGEX.test(habitId) ||
@@ -240,7 +263,7 @@ export class BatchImportService {
             return;
           }
 
-          const checkinDate = this.parseDate(record?.checkinDate);
+          const checkinDate = this.parseDate(entry.checkinDate);
           if (!checkinDate) {
             validationErrors.push({
               rowNumber: index + 1,
@@ -254,23 +277,27 @@ export class BatchImportService {
           records.push({
             habitId,
             checkinDate,
-            notes: typeof record?.notes === 'string' ? record.notes : null,
-            moodRating: this.parseNumber(record?.moodRating),
-            durationMinutes: this.parseNumber(record?.durationMinutes),
+            notes: typeof entry.notes === 'string' ? entry.notes : null,
+            moodRating: this.parseNumber(entry.moodRating),
+            durationMinutes: this.parseNumber(entry.durationMinutes),
           });
         });
 
         if (records.length > 0) {
-          successCount = await this.prisma.$transaction(async (tx) => {
-            await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
-            return this.insertCheckins(tx, userId, records);
-          });
+          successCount = await this.prisma.$transaction(
+            async (tx) => {
+              await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
+              return this.insertCheckins(tx, userId, records);
+            },
+            { timeout: BatchImportService.TRANSACTION_TIMEOUT_MS },
+          );
         }
       } else if (dto.entityType === 'tags') {
         const records: Array<{ name: string; slug: string; color: string }> = [];
 
         dto.data.forEach((record, index) => {
-          const name = typeof record?.name === 'string' ? record.name.trim() : '';
+          const entry = record as Record<string, unknown>;
+          const name = typeof entry.name === 'string' ? entry.name.trim() : '';
           if (!name) {
             validationErrors.push({
               rowNumber: index + 1,
@@ -282,26 +309,33 @@ export class BatchImportService {
           }
 
           const slugFromInput =
-            typeof record?.slug === 'string' ? this.slugify(record.slug) : '';
+            typeof entry.slug === 'string' ? this.slugify(entry.slug) : '';
           const slug = slugFromInput || this.slugify(name) || 'tag';
 
           records.push({
             name,
             slug,
-            color: typeof record?.color === 'string' ? record.color : '#gray',
+            color: typeof entry.color === 'string' ? entry.color : '#gray',
           });
         });
 
         if (records.length > 0) {
-          successCount = await this.prisma.$transaction(async (tx) => {
-            await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
-            return this.insertTags(tx, records);
-          });
+          successCount = await this.prisma.$transaction(
+            async (tx) => {
+              await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
+              return this.insertTags(tx, records);
+            },
+            { timeout: BatchImportService.TRANSACTION_TIMEOUT_MS },
+          );
         }
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error';
-      const errorCode = error?.code || 'UNKNOWN';
+      const isTimeout =
+        error?.code === 'P1008' ||
+        error?.code === 'P2034' ||
+        /timeout/i.test(errorMessage);
+      const errorCode = isTimeout ? 'TIMEOUT' : error?.code || 'UNKNOWN';
 
       validationErrors.length = 0;
       dto.data.forEach((record, index) => {

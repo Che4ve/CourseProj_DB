@@ -1,7 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,11 +29,22 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.use(json({ limit: '200kb' }));
+  app.use(urlencoded({ extended: true, limit: '200kb' }));
+
   // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+      validationError: { target: false, value: false },
+    }),
+  );
+
+  app.useGlobalFilters(new PrismaExceptionFilter(), new AllExceptionsFilter());
 
   // Swagger configuration
   const config = new DocumentBuilder()
@@ -51,8 +65,6 @@ async function bootstrap() {
 }
 
 bootstrap();
-
-
 
 
 

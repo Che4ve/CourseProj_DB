@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseIntPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -12,12 +15,11 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import {
-  BatchCheckinsDto,
-  CheckinsService,
-  CreateCheckinDto,
-  UpdateCheckinDto,
-} from './checkins.service';
+import { CheckinsService } from './checkins.service';
+import { BatchCheckinsDto } from './dto/batch-checkins.dto';
+import { CreateCheckinDto } from './dto/create-checkin.dto';
+import { UpdateCheckinDto } from './dto/update-checkin.dto';
+import { ParseDatePipe } from '../common/pipes/parse-date.pipe';
 
 @ApiTags('checkins')
 @Controller('checkins')
@@ -35,24 +37,24 @@ export class CheckinsController {
   @Get('habit/:habitId')
   @ApiOperation({ summary: 'Get checkins for a habit' })
   async findByHabit(
-    @Param('habitId') habitId: string,
-    @Query('limit') limit: string,
+    @Param('habitId', ParseUUIDPipe) habitId: string,
+    @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
     @Request() req,
   ) {
-    return this.checkinsService.findByHabit(habitId, req.user.id, limit ? parseInt(limit) : 30);
+    return this.checkinsService.findByHabit(habitId, req.user.id, limit);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete checkin' })
-  async delete(@Param('id') id: string, @Request() req) {
+  async delete(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
     return this.checkinsService.delete(id, req.user.id);
   }
 
   @Delete('habit/:habitId/date/:date')
   @ApiOperation({ summary: 'Delete checkin by habit and date' })
   async deleteByHabitAndDate(
-    @Param('habitId') habitId: string,
-    @Param('date') date: string,
+    @Param('habitId', ParseUUIDPipe) habitId: string,
+    @Param('date', ParseDatePipe) date: string,
     @Request() req,
   ) {
     return this.checkinsService.deleteByHabitAndDate(habitId, date, req.user.id);
@@ -61,8 +63,8 @@ export class CheckinsController {
   @Patch('habit/:habitId/date/:date')
   @ApiOperation({ summary: 'Update checkin by habit and date' })
   async updateByHabitAndDate(
-    @Param('habitId') habitId: string,
-    @Param('date') date: string,
+    @Param('habitId', ParseUUIDPipe) habitId: string,
+    @Param('date', ParseDatePipe) date: string,
     @Body() dto: UpdateCheckinDto,
     @Request() req,
   ) {
@@ -72,7 +74,7 @@ export class CheckinsController {
   @Post('habit/:habitId/batch')
   @ApiOperation({ summary: 'Batch update checkins for a habit' })
   async batchUpdate(
-    @Param('habitId') habitId: string,
+    @Param('habitId', ParseUUIDPipe) habitId: string,
     @Body() dto: BatchCheckinsDto,
     @Request() req,
   ) {

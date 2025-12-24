@@ -1,33 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-
-export interface CreateCheckinDto {
-	habitId: string;
-	date?: string; // YYYY-MM-DD format (optional, defaults to today)
-	checkinDate?: Date; // Alternative: Date object
-	notes?: string;
-	moodRating?: number;
-	durationMinutes?: number;
-}
-
-export interface UpdateCheckinDto {
-	notes?: string | null;
-	moodRating?: number | null;
-	durationMinutes?: number | null;
-}
-
-export interface BatchCheckinUpdateDto {
-	date: string;
-	completed: boolean;
-}
-
-export interface BatchCheckinsDto {
-	updates: BatchCheckinUpdateDto[];
-}
+import { BatchCheckinsDto } from "./dto/batch-checkins.dto";
+import { CreateCheckinDto } from "./dto/create-checkin.dto";
+import { UpdateCheckinDto } from "./dto/update-checkin.dto";
 
 @Injectable()
 export class CheckinsService {
 	constructor(private prisma: PrismaService) {}
+
+	private static readonly MAX_LIMIT = 365;
 
 	async create(userId: string, dto: CreateCheckinDto) {
 		// Проверяем, что привычка принадлежит пользователю
@@ -40,8 +21,8 @@ export class CheckinsService {
 		}
 
 		// Parse date if provided as string
-		let checkinDate = dto.checkinDate;
-		if (dto.date && !checkinDate) {
+		let checkinDate = dto.checkinDate ? new Date(dto.checkinDate) : undefined;
+		if (!checkinDate && dto.date) {
 			checkinDate = new Date(dto.date);
 		}
 		if (!checkinDate) {
@@ -85,10 +66,16 @@ export class CheckinsService {
 			throw new NotFoundException("Habit not found");
 		}
 
+		const normalizedLimit = Number.isFinite(limit) ? limit : 30;
+		const safeLimit = Math.min(
+			Math.max(normalizedLimit, 1),
+			CheckinsService.MAX_LIMIT,
+		);
+
 		return this.prisma.habitCheckin.findMany({
 			where: { habitId },
 			orderBy: { checkinDate: "desc" },
-			take: limit,
+			take: safeLimit,
 		});
 	}
 
@@ -211,12 +198,7 @@ export class CheckinsService {
 
 		dto.updates.forEach((update) => {
 			const dateValue = update?.date;
-			const date =
-				typeof dateValue === "string"
-					? dateValue
-					: dateValue instanceof Date
-						? dateValue.toISOString().slice(0, 10)
-						: "";
+			const date = typeof dateValue === "string" ? dateValue : "";
 
 			let completedValue: boolean | null = null;
 			if (typeof update?.completed === "boolean") {

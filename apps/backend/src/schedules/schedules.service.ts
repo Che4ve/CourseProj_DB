@@ -1,24 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
-export interface CreateScheduleDto {
-  habitId: string;
-  frequencyType: string;
-  frequencyValue?: number;
-  weekdaysMask?: number;
-  startDate: string | Date;
-  endDate?: string | Date | null;
-  isActive?: boolean;
-}
-
-export interface UpdateScheduleDto {
-  frequencyType?: string;
-  frequencyValue?: number;
-  weekdaysMask?: number;
-  startDate?: string | Date;
-  endDate?: string | Date | null;
-  isActive?: boolean;
-}
+import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @Injectable()
 export class SchedulesService {

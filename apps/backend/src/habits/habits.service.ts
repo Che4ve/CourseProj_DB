@@ -1,22 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
-export interface CreateHabitDto {
-  name: string;
-  description?: string;
-  type: 'good' | 'bad';
-  color?: string;
-  priority?: number;
-}
-
-export interface UpdateHabitDto {
-  name?: string;
-  description?: string;
-  type?: 'good' | 'bad';
-  color?: string;
-  priority?: number;
-  isArchived?: boolean;
-}
+import { CreateHabitDto } from './dto/create-habit.dto';
+import { UpdateHabitDto } from './dto/update-habit.dto';
 
 @Injectable()
 export class HabitsService {
@@ -122,5 +107,4 @@ export class HabitsService {
     return { message: 'Habit deleted successfully' };
   }
 }
-
 

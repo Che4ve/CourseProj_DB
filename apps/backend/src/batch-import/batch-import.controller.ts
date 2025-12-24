@@ -1,7 +1,17 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { BatchImportService, BatchImportDto } from './batch-import.service';
+import { BatchImportService } from './batch-import.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { BatchImportDto } from './dto/batch-import.dto';
 
 @ApiTags('batch-import')
 @Controller('batch-import')
@@ -18,9 +28,11 @@ export class BatchImportController {
 
   @Get('job/:jobId')
   @ApiOperation({ summary: 'Get batch import job status' })
-  async getJobStatus(@Param('jobId') jobId: string, @Request() req): Promise<any> {
+  async getJobStatus(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Request() req,
+  ): Promise<any> {
     return this.batchImportService.getJobStatus(jobId, req.user.id);
   }
 }
-
 

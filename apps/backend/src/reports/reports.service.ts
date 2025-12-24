@@ -1,21 +1,22 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class ReportsService {
-  constructor(private prisma: PrismaService) {}
+	constructor(private prisma: PrismaService) {}
 
-  // ✅ ПАРАМЕТРИЗОВАННЫЙ SQL через $queryRaw
-  async getUserHabitsReport(userId: string, fromDate: string, toDate: string) {
-    // Используем табличную функцию report_user_habits
-    const result = await this.prisma.$queryRaw<Array<{
-      habit_id: string;
-      habit_name: string;
-      habit_type: string;
-      total_checkins: bigint;
-      completion_rate: number;
-      last_checkin: Date | null;
-    }>>`
+	async getUserHabitsReport(userId: string, fromDate: string, toDate: string) {
+		// Используем табличную функцию report_user_habits
+		const result = await this.prisma.$queryRaw<
+			Array<{
+				habit_id: string;
+				habit_name: string;
+				habit_type: string;
+				total_checkins: bigint;
+				completion_rate: number;
+				last_checkin: Date | null;
+			}>
+		>`
       SELECT * FROM report_user_habits(
         ${userId}::uuid,
         ${fromDate}::date,
@@ -23,21 +24,22 @@ export class ReportsService {
       )
     `;
 
-    return result.map(row => ({
-      ...row,
-      total_checkins: Number(row.total_checkins),
-    }));
-  }
+		return result.map((row) => ({
+			...row,
+			total_checkins: Number(row.total_checkins),
+		}));
+	}
 
-  // ✅ ПАРАМЕТРИЗОВАННЫЙ SQL: сложный отчёт с JOIN и агрегацией
-  async getDailyStats(userId: string, days: number = 30) {
-    const result = await this.prisma.$queryRaw<Array<{
-      date: Date;
-      total_checkins: bigint;
-      unique_habits: bigint;
-      avg_mood: number | null;
-      total_duration: bigint | null;
-    }>>`
+	async getDailyStats(userId: string, days: number = 30) {
+		const result = await this.prisma.$queryRaw<
+			Array<{
+				date: Date;
+				total_checkins: bigint;
+				unique_habits: bigint;
+				avg_mood: number | null;
+				total_duration: bigint | null;
+			}>
+		>`
       SELECT 
         hc.checkin_date as date,
         COUNT(*) as total_checkins,
@@ -52,17 +54,16 @@ export class ReportsService {
       ORDER BY hc.checkin_date DESC
     `;
 
-    return result.map(row => ({
-      ...row,
-      total_checkins: Number(row.total_checkins),
-      unique_habits: Number(row.unique_habits),
-      total_duration: row.total_duration ? Number(row.total_duration) : null,
-    }));
-  }
+		return result.map((row) => ({
+			...row,
+			total_checkins: Number(row.total_checkins),
+			unique_habits: Number(row.unique_habits),
+			total_duration: row.total_duration ? Number(row.total_duration) : null,
+		}));
+	}
 
-  // ✅ ПАРАМЕТРИЗОВАННЫЙ SQL: использование скалярной функции
-  async getCompletionRate(userId: string, fromDate: string, toDate: string) {
-    const result = await this.prisma.$queryRaw<Array<{ rate: number }>>`
+	async getCompletionRate(userId: string, fromDate: string, toDate: string) {
+		const result = await this.prisma.$queryRaw<Array<{ rate: number }>>`
       SELECT calc_completion_rate(
         ${userId}::uuid,
         ${fromDate}::date,
@@ -70,18 +71,19 @@ export class ReportsService {
       ) as rate
     `;
 
-    return { completionRate: result[0]?.rate || 0 };
-  }
+		return { completionRate: result[0]?.rate || 0 };
+	}
 
-  // ✅ ПАРАМЕТРИЗОВАННЫЙ SQL: агрегация с подзапросами
-  async getHabitStreaks(userId: string) {
-    const result = await this.prisma.$queryRaw<Array<{
-      habit_id: string;
-      habit_name: string;
-      current_streak: number;
-      longest_streak: number;
-      last_checkin: Date | null;
-    }>>`
+	async getHabitStreaks(userId: string) {
+		const result = await this.prisma.$queryRaw<
+			Array<{
+				habit_id: string;
+				habit_name: string;
+				current_streak: number;
+				longest_streak: number;
+				last_checkin: Date | null;
+			}>
+		>`
       SELECT 
         h.id as habit_id,
         h.name as habit_name,
@@ -95,11 +97,6 @@ export class ReportsService {
       ORDER BY hs.current_streak DESC NULLS LAST
     `;
 
-    return result;
-  }
+		return result;
+	}
 }
-
-
-
-
-

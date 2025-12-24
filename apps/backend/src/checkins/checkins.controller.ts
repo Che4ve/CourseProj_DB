@@ -12,7 +12,12 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CheckinsService, CreateCheckinDto, UpdateCheckinDto } from './checkins.service';
+import {
+  BatchCheckinsDto,
+  CheckinsService,
+  CreateCheckinDto,
+  UpdateCheckinDto,
+} from './checkins.service';
 
 @ApiTags('checkins')
 @Controller('checkins')
@@ -62,5 +67,15 @@ export class CheckinsController {
     @Request() req,
   ) {
     return this.checkinsService.updateByHabitAndDate(habitId, date, req.user.id, dto);
+  }
+
+  @Post('habit/:habitId/batch')
+  @ApiOperation({ summary: 'Batch update checkins for a habit' })
+  async batchUpdate(
+    @Param('habitId') habitId: string,
+    @Body() dto: BatchCheckinsDto,
+    @Request() req,
+  ) {
+    return this.checkinsService.updateBatchByHabit(habitId, req.user.id, dto);
   }
 }

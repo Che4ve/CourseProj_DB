@@ -18,16 +18,10 @@ export class PrismaService
 		await this.$disconnect();
 	}
 
-	/**
-	 * Устанавливает user_id для текущей сессии PostgreSQL
-	 * Используется триггерами аудита для записи информации о пользователе
-	 * ✅ ПАРАМЕТРИЗОВАННЫЙ запрос - защита от SQL-инъекций
-	 */
 	async setUserId(userId: string): Promise<void> {
 		const store = asyncLocalStorage.getStore();
 		if (store?.userId || userId) {
 			const id = store?.userId || userId;
-			// ✅ ПАРАМЕТРИЗОВАННЫЙ запрос через set_config()
 			await this.$executeRaw`SELECT set_config('app.user_id', ${id}, true)`;
 		}
 	}

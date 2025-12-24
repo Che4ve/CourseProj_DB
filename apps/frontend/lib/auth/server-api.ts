@@ -114,6 +114,11 @@ export interface UpdateCheckinDto {
 	durationMinutes?: number | null;
 }
 
+export interface BatchCheckinUpdateDto {
+	date: string;
+	completed: boolean;
+}
+
 export interface CreateTagDto {
 	name: string;
 }
@@ -236,10 +241,26 @@ export const serverCheckinsApi = {
 		date: string,
 		data: UpdateCheckinDto,
 	): Promise<HabitCheckin> {
-		return fetchApiServer<HabitCheckin>(`/checkins/habit/${habitId}/date/${date}`, {
-			method: "PATCH",
-			body: JSON.stringify(data),
-		});
+		return fetchApiServer<HabitCheckin>(
+			`/checkins/habit/${habitId}/date/${date}`,
+			{
+				method: "PATCH",
+				body: JSON.stringify(data),
+			},
+		);
+	},
+
+	async batchUpdate(
+		habitId: string,
+		updates: BatchCheckinUpdateDto[],
+	): Promise<Array<{ date: string; completed: boolean; ok: boolean }>> {
+		return fetchApiServer<Array<{ date: string; completed: boolean; ok: boolean }>>(
+			`/checkins/habit/${habitId}/batch`,
+			{
+				method: "POST",
+				body: JSON.stringify({ updates }),
+			},
+		);
 	},
 
 	async toggle(

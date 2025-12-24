@@ -1,42 +1,43 @@
 {
-  "name": "habit-tracker-monorepo",
-  "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev": "turbo run dev",
-    "backend:dev": "turbo run dev --filter=backend",
-    "frontend:dev": "turbo run dev --filter=frontend",
-    "dev:backend": "turbo run dev --filter=backend",
-    "dev:frontend": "turbo run dev --filter=frontend",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
-    "check": "biome check .",
-    "check:fix": "biome check --write .",
-    "db:generate": "turbo run db:generate --filter=@repo/db",
-    "db:push": "turbo run db:push --filter=@repo/db",
-    "db:migrate": "turbo run db:migrate --filter=@repo/db",
-    "db:seed": "turbo run db:seed --filter=@repo/db",
-    "db:sql": "turbo run db:sql --filter=@repo/db",
-    "db:studio": "turbo run db:studio --filter=@repo/db",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f",
-    "docker:clean": "docker-compose down -v"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.2.5",
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.3"
-  },
-  "engines": {
-    "node": ">=20",
-    "pnpm": ">=9"
-  },
-  "packageManager": "pnpm@9.15.3"
+	"name": "habit-tracker-monorepo",
+	"version": "1.0.0",
+	"private": true,
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "turbo run dev",
+		"backend:dev": "turbo run dev --filter=backend",
+		"frontend:dev": "turbo run dev --filter=frontend",
+		"dev:backend": "turbo run dev --filter=backend",
+		"dev:frontend": "turbo run dev --filter=frontend",
+		"build": "turbo run build",
+		"lint": "turbo run lint",
+		"format": "biome format --write .",
+		"format:check": "biome format .",
+		"check": "biome check .",
+		"check:fix": "biome check --write .",
+		"db:generate": "turbo run db:generate --filter=@repo/db",
+		"db:push": "turbo run db:push --filter=@repo/db",
+		"db:migrate": "turbo run db:migrate --filter=@repo/db",
+		"db:seed": "turbo run db:seed --filter=@repo/db",
+		"db:sql": "turbo run db:sql --filter=@repo/db",
+		"db:studio": "turbo run db:studio --filter=@repo/db",
+		"db:erd": "prisma generate && echo 'ERD generated in prisma/ERD.svg'",
+		"docker:up": "docker-compose up -d",
+		"docker:down": "docker-compose down",
+		"docker:logs": "docker-compose logs -f",
+		"docker:clean": "docker-compose down -v"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.2.5",
+		"turbo": "^2.3.3",
+		"typescript": "^5.7.3"
+	},
+	"engines": {
+		"node": ">=20",
+		"pnpm": ">=9"
+	},
+	"packageManager": "pnpm@9.15.3"
 }

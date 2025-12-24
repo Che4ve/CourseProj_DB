@@ -48,14 +48,13 @@ model UserProfile {
   @@map("user_profiles")
 }
 
-// 3. Habit - 10 колонок, 7 РАЗНЫХ типов: UUID, String, Boolean, DateTime, Int
+// 3. Habit - 9 колонок, 7 РАЗНЫХ типов: UUID, String, Boolean, DateTime, Int
 model Habit {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId       String    @map("user_id") @db.Uuid
   name         String    @db.Text
   description  String?   @db.Text
   type         String    @db.VarChar(10)
-  color        String    @default("#6366f1") @db.VarChar(7)
   priority     Int       @default(0) @db.SmallInt
   isArchived   Boolean   @default(false) @map("is_archived")
   displayOrder Int       @default(0) @map("display_order")

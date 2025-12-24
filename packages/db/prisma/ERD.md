@@ -31,7 +31,6 @@ erDiagram
     String name 
     String description "❓"
     String type 
-    String color 
     Int priority 
     Boolean is_archived 
     Int display_order 

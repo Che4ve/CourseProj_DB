@@ -67,13 +67,11 @@ Content-Type: application/json
     {
       "name": "Morning Exercise",
       "type": "good",
-      "color": "#6366f1",
       "priority": 5
     },
     {
       "name": "Read 30 minutes",
       "type": "good",
-      "color": "#8b5cf6",
       "priority": 3
     }
   ]
@@ -145,8 +143,7 @@ Authorization: Bearer <token>
       "rowNumber": 15,
       "recordData": {
         "name": "Invalid Habit",
-      "type": "invalid_type",
-      "color": "#6366f1"
+      "type": "invalid_type"
       },
     "errorMessage": "Invalid habit type: must be 'good' or 'bad'",
       "errorCode": "VALIDATION_ERROR",
@@ -287,11 +284,6 @@ validate(data: any): ValidatedData {
     throw new Error('Invalid habit type: must be "good" or "bad"');
   }
 
-  // Проверка цвета (regex)
-  if (data.color && !/^#[0-9A-Fa-f]{6}$/.test(data.color)) {
-    throw new Error('Invalid color format: must be hex color like #6366f1');
-  }
-
   // Проверка приоритета
   if (data.priority !== undefined) {
     const priority = Number(data.priority);
@@ -303,7 +295,6 @@ validate(data: any): ValidatedData {
   return {
     name: data.name.trim(),
     type: data.type,
-    color: data.color || '#6366f1',
     priority: data.priority || 0,
   };
 }
@@ -337,13 +328,11 @@ curl -X POST http://localhost:3001/batch-import \
       {
         "name": "Morning Run",
         "type": "good",
-        "color": "#6366f1",
         "priority": 5
       },
       {
         "name": "Read Daily",
         "type": "good",
-        "color": "#8b5cf6",
         "priority": 3
       }
     ]

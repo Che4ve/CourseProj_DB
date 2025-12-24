@@ -106,7 +106,6 @@ async function createHabits(users: any[], count: number) {
           : faker.lorem.words(3),
         description: faker.datatype.boolean(0.7) ? template.desc : null,
         type: template.type,
-        color: faker.helpers.arrayElement(COLORS),
         priority: faker.number.int({ min: 0, max: 10 }),
         isArchived: faker.datatype.boolean(0.1),
         displayOrder: i,
@@ -283,7 +282,6 @@ async function main() {
 }
 
 main();
-
 
 
 

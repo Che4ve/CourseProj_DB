@@ -20,8 +20,7 @@ SELECT
   hc.checkin_date,
   hc.checkin_time,
   hc.mood_rating,
-  h.name as habit_name,
-  h.color as habit_color
+  h.name as habit_name
 FROM habit_checkins hc
 JOIN habits h ON h.id = hc.habit_id
 WHERE hc.user_id = 'user-uuid-here'

@@ -52,7 +52,6 @@ export class BatchImportService {
       name: string;
       description: string | null;
       type: string;
-      color: string;
       priority: number;
     }>,
   ): Promise<number> {
@@ -60,12 +59,12 @@ export class BatchImportService {
 
     const rows = records.map(
       (record) =>
-        Prisma.sql`(${userId}::uuid, ${record.name}, ${record.description}, ${record.type}, ${record.color}, ${record.priority})`,
+        Prisma.sql`(${userId}::uuid, ${record.name}, ${record.description}, ${record.type}, ${record.priority})`,
     );
 
     const result = await tx.$queryRaw<Array<{ count: number }>>(Prisma.sql`
       WITH inserted AS (
-        INSERT INTO habits (user_id, name, description, type, color, priority)
+        INSERT INTO habits (user_id, name, description, type, priority)
         VALUES ${Prisma.join(rows)}
         RETURNING 1
       )
@@ -196,7 +195,6 @@ export class BatchImportService {
           name: string;
           description: string | null;
           type: string;
-          color: string;
           priority: number;
         }> = [];
 
@@ -221,7 +219,6 @@ export class BatchImportService {
             description:
               typeof entry.description === 'string' ? entry.description : null,
             type,
-            color: typeof entry.color === 'string' ? entry.color : '#6366f1',
             priority,
           });
         });

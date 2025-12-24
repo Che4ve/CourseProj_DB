@@ -107,7 +107,6 @@ Authorization: Bearer <token>
     "name": "Morning Exercise",
     "description": "30 minutes of cardio",
     "type": "good",
-    "color": "#6366f1",
     "priority": 5,
     "isArchived": false,
     "createdAt": "2024-01-01T00:00:00.000Z"
@@ -130,7 +129,6 @@ Authorization: Bearer <token>
   "name": "Read 30 minutes",
   "description": "Daily reading habit",
   "type": "good",
-  "color": "#8b5cf6",
   "priority": 3
 }
 ```
@@ -142,7 +140,6 @@ Authorization: Bearer <token>
   "name": "Read 30 minutes",
   "description": "Daily reading habit",
   "type": "good",
-  "color": "#8b5cf6",
   "priority": 3,
   "isArchived": false,
   "displayOrder": 0,
@@ -166,7 +163,6 @@ Authorization: Bearer <token>
   "name": "Morning Exercise",
   "description": "30 minutes of cardio",
   "type": "good",
-  "color": "#6366f1",
   "priority": 5,
   "isArchived": false,
   "stats": {
@@ -401,13 +397,11 @@ Content-Type: application/json
   "data": [
     {
       "name": "Habit 1",
-      "type": "good",
-      "color": "#6366f1"
+      "type": "good"
     },
     {
       "name": "Habit 2",
-      "type": "bad",
-      "color": "#f43f5e"
+      "type": "bad"
     }
   ]
 }

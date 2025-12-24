@@ -77,7 +77,7 @@
 
 ---
 
-### 3. habits — 10 колонок, 7 РАЗНЫХ типов ✓
+### 3. habits — 9 колонок, 7 РАЗНЫХ типов ✓
 
 **Назначение**: Привычки пользователей (хорошие и плохие).
 
@@ -88,7 +88,6 @@
 | name | TEXT | NOT NULL | Название привычки |
 | description | TEXT | NULL | Описание |
 | type | VARCHAR(10) | NOT NULL, CHECK IN ('good', 'bad') | Тип привычки |
-| color | VARCHAR(7) | DEFAULT '#6366f1' | Цвет для UI |
 | priority | SMALLINT | DEFAULT 0, CHECK (0-10) | Приоритет |
 | is_archived | BOOLEAN | DEFAULT false | Архивирована |
 | display_order | INTEGER | DEFAULT 0 | Порядок отображения |
@@ -403,7 +402,6 @@ erDiagram
         text name
         text description
         varchar type
-        varchar color
         smallint priority
         boolean is_archived
         integer display_order

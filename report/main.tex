@@ -1,0 +1,802 @@
+\documentclass[a4paper,14pt]{extarticle}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage{tempora}
+\usepackage[russian]{babel}
+\usepackage{cmap}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{fancyhdr}
+
+\geometry{
+  left=30mm,
+  right=15mm,
+  top=20mm,
+  bottom=20mm
+}
+
+\onehalfspacing
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+\sloppy
+
+\setlist[itemize]{label=--, leftmargin=1.25cm, itemsep=0pt, topsep=0pt}
+\setlist[enumerate]{label=\arabic*), leftmargin=1.25cm, itemsep=0pt, topsep=0pt}
+
+\DeclareCaptionFont{singlespacing}{\setstretch{1}}
+\captionsetup{labelsep=emdash, font=singlespacing}
+
+\renewcommand{\contentsname}{СОДЕРЖАНИЕ}
+\renewcommand{\lstlistingname}{Листинг}
+
+\lstset{
+  language=SQL,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{teal},
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=6pt,
+  stepnumber=1,
+  frame=single,
+  breaklines=true,
+  showstringspaces=false,
+  columns=fullflexible,
+  tabsize=2
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\tikzset{
+  block/.style={draw, rounded corners, align=center, minimum height=1.1cm, minimum width=3.4cm},
+  arrow/.style={-{Latex[length=3mm]}, thick}
+}
+
+\begin{document}
+\pagenumbering{arabic}
+
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{singlespace}
+\begin{center}
+Министерство науки и высшего образования Российской Федерации \\
+Федеральное государственное бюджетное образовательное учреждение высшего образования \\
+«Московский авиационный институт (национальный исследовательский университет)» \\
+Институт № 8 «Компьютерные науки и прикладная математика» \\
+Кафедра 806 «Вычислительная математика и программирование»
+\end{center}
+
+\vspace{30mm}
+
+\begin{center}
+КУРСОВОЙ ПРОЕКТ \\
+по дисциплине «Базы данных» \\
+на тему: «Информационная система для трекинга привычек»
+\end{center}
+
+\vfill
+
+\begin{flushright}
+Выполнил: студент группы М8О-309Б-23 \\
+Чесноков В.\,Д. \\
+Руководитель: Грубенко М.\,Д.
+\end{flushright}
+
+\vfill
+
+\begin{center}
+Москва 2025
+\end{center}
+\end{singlespace}
+\end{titlepage}
+
+\newpage
+\section*{СПИСОК ИСПОЛНИТЕЛЕЙ}
+\addcontentsline{toc}{section}{СПИСОК ИСПОЛНИТЕЛЕЙ}
+\begin{singlespace}
+Студент группы М8О-309Б-23 Чесноков В.\,Д. --- исполнитель. \\
+Подпись: \underline{\hspace{3cm}} \hfill Дата: \underline{\hspace{2cm}} 2025~г.
+
+\vspace{5mm}
+
+Руководитель: Грубенко М.\,Д. --- руководитель работы. \\
+Подпись: \underline{\hspace{3cm}} \hfill Дата: \underline{\hspace{2cm}} 2025~г.
+\end{singlespace}
+
+\newpage
+\section*{РЕФЕРАТ}
+\addcontentsline{toc}{section}{РЕФЕРАТ}
+Отчет 30~с., 1~кн., 3~рис., 3~табл., 7~источн., 4~прил.
+
+КЛЮЧЕВЫЕ СЛОВА: база данных, PostgreSQL, триггеры, функции, представления, аудит, индексы, REST API, Swagger, контейнеризация.
+
+В отчете описана разработка информационной системы для трекинга привычек с реляционной базой данных PostgreSQL. Объект исследования --- процессы хранения и анализа данных о привычках пользователей. Цель работы --- спроектировать и реализовать базу данных и API, поддерживающие учет привычек, отметок выполнения и аналитических отчетов. Метод исследования --- проектирование реляционной схемы, нормализация, разработка ограничений целостности, индексов и экспериментальный анализ производительности с EXPLAIN ANALYZE. Полученные результаты: создана схема из 13 таблиц, реализованы триггеры аудита и агрегатов, функции и представления, batch import и REST API. Эффективность подтверждена ускорением ключевых запросов в десятки раз.
+
+\newpage
+\tableofcontents
+
+\newpage
+\section*{ВВЕДЕНИЕ}
+\addcontentsline{toc}{section}{ВВЕДЕНИЕ}
+Современные сервисы персональной продуктивности требуют надежного хранения данных, оперативной аналитики и прозрачного контроля изменений. Поэтому актуально проектирование информационных систем с реляционной базой данных, поддерживающей проверку целостности, аудит и оптимизацию запросов. Требования к структуре пояснительной записки определены ГОСТ 7.32-2017 \cite{gost732} и техническим заданием \cite{courseTask}.
+
+Объект исследования --- информационная система для трекинга привычек пользователей. Предмет исследования --- проектирование и реализация реляционной базы данных и API, обеспечивающих хранение, обработку и анализ данных о привычках.
+
+Цель работы --- разработать информационную систему с реляционной БД и серверным API, поддерживающими учет привычек, отметок выполнения и аналитические отчеты.
+
+Для достижения цели решены следующие задачи:
+\begin{enumerate}
+  \item провести анализ предметной области и требований к системе;
+  \item спроектировать структуру БД с необходимыми связями и типами данных;
+  \item реализовать ограничения целостности (PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK, NOT NULL);
+  \item разработать SQL-объекты: триггеры, функции и представления;
+  \item реализовать REST API и механизм batch import;
+  \item оптимизировать запросы индексами и выполнить анализ производительности;
+  \item описать контейнеризацию, развертывание и тестирование.
+\end{enumerate}
+
+Практическая значимость работы заключается в создании полноценной БД и API, готовых к использованию в сервисе трекинга привычек. Структура отчета включает введение, аналитическую, проектную и технологическую части, заключение и приложения.
+
+\newpage
+\section{АНАЛИТИЧЕСКАЯ ЧАСТЬ}
+\subsection{Обзор предметной области}
+Сервис трекинга привычек предназначен для ведения списка привычек, контроля регулярности выполнения и получения аналитических отчетов. Для корректной работы системы требуется хранить учетные записи пользователей, перечни привычек, расписания, отметки выполнения, теги и напоминания, а также агрегированную статистику. Для контроля корректности и отслеживания изменений необходим журнал аудита.
+
+Ключевые сущности предметной области:
+\begin{itemize}
+  \item пользователи и их профили;
+  \item привычки и расписания выполнения;
+  \item отметки выполнения и связанные параметры (настроение, длительность);
+  \item теги и напоминания;
+  \item агрегированная статистика и аудит изменений.
+\end{itemize}
+
+Для предметной области характерны частые транзакционные операции (ежедневные отметки) и аналитические выборки. Это обуславливает необходимость индексирования и оптимизации запросов.
+
+\subsection{Постановка задачи}
+В соответствии с техническим заданием \cite{courseTask} система должна содержать не менее 9--10 таблиц со связями 1:1, 1:N и N:M, при этом каждая таблица включает не менее пяти атрибутов различных типов. Требуется реализовать ограничения целостности, каскадные правила, триггеры аудита и агрегатов, SQL-функции (скалярные и табличные), а также не менее трех представлений. Для ключевых запросов необходимо создать индексы и показать ускорение с помощью EXPLAIN ANALYZE. API должно предоставлять CRUD-операции, отчеты, batch import и быть документировано через Swagger.
+
+\newpage
+\section{ПРОЕКТНАЯ ЧАСТЬ}
+\subsection{Архитектура системы}
+Система реализована как монорепозиторий с разделением на backend, frontend и пакет базы данных. Backend построен на NestJS \cite{nestjs} и взаимодействует с PostgreSQL 16 \cite{postgres} через ORM Prisma \cite{prisma}. Frontend реализован на Next.js \cite{nextjs}. Контейнеризация выполнена с помощью Docker и Docker Compose \cite{docker}. Архитектура взаимодействия компонентов представлена на рисунке \ref{fig:architecture}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=2.2cm]
+\node[block] (frontend) {Frontend\\Next.js};
+\node[block, right=of frontend] (backend) {Backend API\\NestJS + Prisma};
+\node[block, right=of backend] (db) {PostgreSQL 16\\База данных};
+\draw[arrow] (frontend) -- (backend);
+\draw[arrow] (backend) -- (db);
+\end{tikzpicture}
+\caption{Архитектура информационной системы}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Проектирование структуры базы данных}
+Схема БД включает 13 таблиц и удовлетворяет требованиям по числу сущностей, разнообразию типов данных и наличию связей разных типов. Используются типы данных UUID, TEXT, VARCHAR, CHAR, INTEGER, BIGINT, SMALLINT, NUMERIC, BOOLEAN, DATE, TIME, TIMESTAMPTZ, JSONB и INET. Основные связи:
+\begin{itemize}
+  \item \texttt{users} --- \texttt{user\_profiles} (1:1);
+  \item \texttt{users} --- \texttt{habits} (1:N);
+  \item \texttt{habits} --- \texttt{habit\_checkins} (1:N);
+  \item \texttt{habits} --- \texttt{tags} (N:M через \texttt{habit\_tags});
+  \item \texttt{habits} --- \texttt{habit\_stats} (1:1);
+  \item \texttt{batch\_import\_jobs} --- \texttt{batch\_import\_errors} (1:N).
+\end{itemize}
+
+Полная ER-диаграмма представлена в приложении А (рисунок \ref{fig:erd}).
+
+\subsection{Описание таблиц базы данных}
+Ключевые таблицы и их назначение приведены в таблице \ref{tab:db-tables}. Полный перечень содержит 13 таблиц: \texttt{users}, \texttt{user\_profiles}, \texttt{habits}, \texttt{habit\_schedules}, \texttt{habit\_checkins}, \texttt{tags}, \texttt{habit\_tags}, \texttt{reminders}, \texttt{habit\_stats}, \texttt{audit\_log}, \texttt{\_manual\_migrations}, \texttt{batch\_import\_jobs}, \texttt{batch\_import\_errors}.
+
+\begin{table}[H]
+\caption{Основные таблицы базы данных}
+\label{tab:db-tables}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{3.5cm} p{7.5cm} p{4.2cm}}
+\toprule
+Таблица & Назначение & Ключевые поля \\
+\midrule
+\texttt{users} & учетные записи пользователей & \texttt{id}, \texttt{email} \\
+\texttt{user\_profiles} & профиль пользователя & \texttt{user\_id}, \texttt{timezone} \\
+\texttt{habits} & перечень привычек & \texttt{user\_id}, \texttt{name}, \texttt{type} \\
+\texttt{habit\_schedules} & расписания привычек & \texttt{habit\_id}, \texttt{frequency\_type} \\
+\texttt{habit\_checkins} & отметки выполнения & \texttt{habit\_id}, \texttt{checkin\_date} \\
+\texttt{tags} & справочник тегов & \texttt{name}, \texttt{slug} \\
+\texttt{habit\_tags} & связь привычек и тегов & \texttt{habit\_id}, \texttt{tag\_id} \\
+\texttt{reminders} & напоминания & \texttt{habit\_id}, \texttt{reminder\_time} \\
+\texttt{habit\_stats} & агрегированная статистика & \texttt{habit\_id}, \texttt{total\_checkins} \\
+\texttt{audit\_log} & журнал аудита & \texttt{table\_name}, \texttt{operation} \\
+\texttt{batch\_import\_jobs} & задания импорта & \texttt{entity\_type}, \texttt{status} \\
+\texttt{batch\_import\_errors} & ошибки импорта & \texttt{job\_id}, \texttt{error\_message} \\
+\texttt{\_manual\_migrations} & учет SQL-миграций & \texttt{name}, \texttt{status} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ограничения целостности данных}
+Для обеспечения целостности реализованы следующие типы ограничений: PRIMARY KEY на поле \texttt{id} во всех таблицах, FOREIGN KEY с каскадным удалением или установкой \texttt{NULL}, UNIQUE для уникальных атрибутов, CHECK для доменных ограничений и NOT NULL для обязательных полей. Примеры ограничений приведены в листинге \ref{lst:constraints}.
+
+\begin{lstlisting}[caption=Примеры ограничений целостности, label=lst:constraints]
+ALTER TABLE habits
+  ADD CONSTRAINT habits_type_check CHECK (type IN ('good', 'bad'));
+
+ALTER TABLE habit_checkins
+  ADD CONSTRAINT habit_checkins_unique UNIQUE (habit_id, checkin_date);
+
+ALTER TABLE habits
+  ADD CONSTRAINT habits_user_fk
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+\end{lstlisting}
+
+\subsection{Реализация SQL-функциональности}
+Базовые CRUD-операции реализованы через Prisma ORM, а сложные выборки и отчеты --- через параметризованные SQL-запросы. Реализованы триггеры аудита и автоматического обновления агрегированной статистики, скалярная функция \texttt{calc\_completion\_rate} и табличная функция \texttt{report\_user\_habits}. Полные скрипты приведены в приложении Б.
+
+В листинге \ref{lst:audit-fragment} приведен фрагмент функции аудита.
+
+\begin{lstlisting}[caption=Фрагмент функции аудита, label=lst:audit-fragment]
+CREATE OR REPLACE FUNCTION audit_trigger_fn() RETURNS TRIGGER AS $$
+DECLARE
+  v_user_id UUID;
+BEGIN
+  v_user_id := nullif(current_setting('app.user_id', true), '')::UUID;
+  INSERT INTO audit_log (table_name, operation, record_id, user_id, old_data, new_data, changed_at)
+  VALUES (
+    TG_TABLE_NAME::VARCHAR,
+    TG_OP::VARCHAR,
+    COALESCE(NEW.id, OLD.id),
+    v_user_id,
+    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN row_to_json(OLD)::jsonb ELSE NULL END,
+    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW)::jsonb ELSE NULL END,
+    NOW()
+  );
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+\end{lstlisting}
+
+\subsection{Описание API и взаимодействия с БД}
+Backend предоставляет REST API с документацией в Swagger. Основные группы эндпойнтов:
+\begin{itemize}
+  \item аутентификация: \texttt{/auth/register}, \texttt{/auth/login}, \texttt{/auth/me};
+  \item управление привычками: \texttt{/habits} (GET, POST), \texttt{/habits/:id} (GET, PUT, DELETE);
+  \item отметки выполнения: \texttt{/checkins} (GET, POST), \texttt{/checkins/:id} (DELETE);
+  \item отчеты: \texttt{/reports/user/:userId}, \texttt{/reports/completion-rate/:userId};
+  \item массовая загрузка: \texttt{/batch-import} и \texttt{/batch-import/:jobId}.
+\end{itemize}
+
+Безопасность обеспечивается JWT-аутентификацией, хешированием паролей (bcrypt) и параметризованными запросами к БД. SQL-инъекции исключаются благодаря использованию ORM и параметризации.
+
+\subsection{Примеры SQL-запросов и анализ производительности}
+Примеры типовых запросов приведены в листинге \ref{lst:sample-queries}.
+
+\begin{lstlisting}[caption=Примеры SQL-запросов, label=lst:sample-queries]
+SELECT * FROM habits
+WHERE user_id = $1 AND NOT is_archived
+ORDER BY display_order;
+
+SELECT * FROM report_user_habits($1, $2, $3);
+
+SELECT * FROM v_user_habit_summary
+WHERE user_id = $1;
+\end{lstlisting}
+
+Для повышения производительности созданы индексы на полях, используемых в фильтрации и сортировке. В таблице \ref{tab:perf} приведено сравнение времени выполнения запросов до и после индексирования. Полные планы EXPLAIN ANALYZE приведены в приложении Г.
+
+\begin{table}[H]
+\caption{Сравнение производительности запросов}
+\label{tab:perf}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{6.5cm} p{2.5cm} p{2.5cm} p{2.5cm}}
+\toprule
+Запрос & До, мс & После, мс & Ускорение \\
+\midrule
+История отметок пользователя за 30 дней & 145.456 & 2.789 & 52x \\
+Журнал аудита за 24 часа & 89.456 & 1.289 & 69x \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ключевые индексы: \texttt{idx\_habits\_user\_id}, \texttt{idx\_habit\_checkins\_user\_date}, \texttt{idx\_audit\_log\_user\_time} и др. (см. приложение Б).
+
+\newpage
+\section{ТЕХНОЛОГИЧЕСКАЯ ЧАСТЬ}
+\subsection{Контейнеризация и развертывание}
+Развертывание системы выполняется с помощью Docker Compose. Используются три сервиса: база данных PostgreSQL, backend и frontend. Фрагмент конфигурации приведен в листинге \ref{lst:docker-compose}.
+
+\begin{lstlisting}[caption=Фрагмент docker-compose.yml, label=lst:docker-compose]
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5434:5432"
+  backend:
+    build: apps/backend
+    depends_on:
+      db:
+        condition: service_healthy
+  frontend:
+    build: apps/frontend
+\end{lstlisting}
+
+После запуска контейнеров выполняются миграции и применение SQL-скриптов: \texttt{pnpm db:migrate}, \texttt{pnpm db:sql}, \texttt{pnpm db:seed}. Swagger доступен по адресу \texttt{http://localhost:3001/api/docs}.
+
+\subsection{Тестирование системы}
+Для проверки работоспособности используются тестовые данные и контрольные запросы. Скрипт заполнения БД формирует реалистичный набор данных, что позволяет проверить триггеры, функции и производительность.
+
+\begin{table}[H]
+\caption{Объем тестовых данных после заполнения}
+\label{tab:seed-data}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{7cm} r}
+\toprule
+Таблица & Количество записей \\
+\midrule
+\texttt{users} & 100 \\
+\texttt{habits} & 800 \\
+\texttt{habit\_checkins} & 10000 \\
+\texttt{tags} & 50 \\
+\texttt{habit\_tags} & 1500 \\
+\texttt{reminders} & 600 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Примеры проверочных запросов:
+\begin{lstlisting}[caption=Контрольные запросы для тестирования, label=lst:test-queries]
+SELECT * FROM audit_log
+ORDER BY changed_at DESC
+LIMIT 5;
+
+SELECT calc_completion_rate($1, '2024-01-01', '2024-12-31');
+
+SELECT * FROM v_daily_completion
+ORDER BY checkin_date DESC
+LIMIT 7;
+\end{lstlisting}
+
+\newpage
+\section*{ЗАКЛЮЧЕНИЕ}
+\addcontentsline{toc}{section}{ЗАКЛЮЧЕНИЕ}
+В ходе выполнения курсового проекта разработана информационная система для трекинга привычек. Спроектирована и реализована реляционная база данных из 13 таблиц с поддержкой связей 1:1, 1:N и N:M, реализованы ограничения целостности, триггеры аудита и агрегатов, функции и представления. Создан REST API с документацией Swagger и механизмом batch import. Проведена оптимизация запросов индексами и выполнен анализ производительности, показавший ускорение в десятки раз.
+
+Поставленные задачи выполнены полностью. Результаты демонстрируют корректность структуры БД, устойчивость работы и готовность системы к дальнейшему развитию, включая расширение аналитики и функциональности.
+
+\newpage
+\section*{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
+\addcontentsline{toc}{section}{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
+\begin{thebibliography}{7}
+  \bibitem{gost732} ГОСТ 7.32-2017. Отчет о научно-исследовательской работе. Структура и правила оформления.
+  \bibitem{courseTask} Техническое задание на курсовую работу по дисциплине «Базы данных». 2025.
+  \bibitem{postgres} PostgreSQL 16 Documentation [Электронный ресурс]. --- URL: \url{https://www.postgresql.org/docs/16/} (дата обращения: 01.03.2025).
+  \bibitem{nestjs} NestJS Documentation [Электронный ресурс]. --- URL: \url{https://docs.nestjs.com/} (дата обращения: 01.03.2025).
+  \bibitem{prisma} Prisma Documentation [Электронный ресурс]. --- URL: \url{https://www.prisma.io/docs} (дата обращения: 01.03.2025).
+  \bibitem{nextjs} Next.js Documentation [Электронный ресурс]. --- URL: \url{https://nextjs.org/docs} (дата обращения: 01.03.2025).
+  \bibitem{docker} Docker Documentation [Электронный ресурс]. --- URL: \url{https://docs.docker.com/} (дата обращения: 01.03.2025).
+\end{thebibliography}
+
+\newpage
+\section*{ПРИЛОЖЕНИЕ А ER-диаграмма базы данных}
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ А ER-диаграмма базы данных}
+\setcounter{figure}{0}
+\renewcommand{\thefigure}{А.\arabic{figure}}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=1.8cm and 2.6cm]
+\node[block] (users) {\texttt{users}};
+\node[block, right=of users] (profiles) {\texttt{user\_profiles}};
+\node[block, below=of users] (habits) {\texttt{habits}};
+\node[block, right=of habits] (stats) {\texttt{habit\_stats}};
+\node[block, below=of habits] (checkins) {\texttt{habit\_checkins}};
+\node[block, right=of checkins] (habit_tags) {\texttt{habit\_tags}};
+\node[block, right=of habit_tags] (tags) {\texttt{tags}};
+
+\draw[arrow] (users) -- node[above]{1:1} (profiles);
+\draw[arrow] (users) -- node[right]{1:N} (habits);
+\draw[arrow] (habits) -- node[above]{1:1} (stats);
+\draw[arrow] (habits) -- node[right]{1:N} (checkins);
+\draw[arrow] (habits) -- (habit_tags);
+\draw[arrow] (tags) -- (habit_tags);
+\end{tikzpicture}
+\caption{Упрощенная ER-диаграмма ключевых сущностей}
+\label{fig:erd}
+\end{figure}
+
+\noindent Код ER-диаграммы в формате Mermaid:
+\begin{lstlisting}
+erDiagram
+    users ||--|| user_profiles : "1:1"
+    users ||--o{ habits : "1:N"
+    users ||--o{ habit_checkins : "1:N"
+    users ||--o{ batch_import_jobs : "1:N"
+
+    habits ||--o{ habit_schedules : "1:N"
+    habits ||--o{ habit_checkins : "1:N"
+    habits ||--o{ reminders : "1:N"
+    habits ||--|| habit_stats : "1:1"
+
+    habits }o--o{ tags : "N:M through habit_tags"
+    habits ||--o{ habit_tags : "1:N"
+    tags ||--o{ habit_tags : "1:N"
+
+    batch_import_jobs ||--o{ batch_import_errors : "1:N"
+\end{lstlisting}
+
+\newpage
+\section*{ПРИЛОЖЕНИЕ Б Примеры SQL-скриптов}
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ Б Примеры SQL-скриптов}
+\renewcommand{\thelstlisting}{Б.\arabic{lstlisting}}
+\setcounter{lstlisting}{0}
+
+\begin{lstlisting}[caption=Триггеры аудита и агрегатов]
+-- Таблица контроля ручных миграций уже создана через Prisma schema
+
+-- ========================================
+-- ФУНКЦИЯ АУДИТА (с правильным user_id и old+new)
+-- ========================================
+CREATE OR REPLACE FUNCTION audit_trigger_fn() RETURNS TRIGGER AS $$
+DECLARE
+  v_user_id UUID;
+BEGIN
+  -- Получаем user_id из SET LOCAL app.user_id (если есть)
+  BEGIN
+    v_user_id := nullif(current_setting('app.user_id', true), '')::UUID;
+  EXCEPTION WHEN OTHERS THEN
+    v_user_id := NULL;
+  END;
+
+  -- Записываем аудит
+  INSERT INTO audit_log (table_name, operation, record_id, user_id, old_data, new_data, changed_at)
+  VALUES (
+    TG_TABLE_NAME::VARCHAR,
+    TG_OP::VARCHAR,
+    COALESCE(NEW.id, OLD.id),
+    v_user_id,
+    -- UPDATE: записываем и old, и new
+    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN row_to_json(OLD)::jsonb ELSE NULL END,
+    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW)::jsonb ELSE NULL END,
+    NOW()
+  );
+
+  -- Правильный RETURN
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  ELSE
+    RETURN NEW;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ========================================
+-- ТРИГГЕРЫ АУДИТА
+-- ========================================
+DROP TRIGGER IF EXISTS habits_audit ON habits;
+CREATE TRIGGER habits_audit
+  AFTER INSERT OR UPDATE OR DELETE ON habits
+  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
+
+DROP TRIGGER IF EXISTS habit_checkins_audit ON habit_checkins;
+CREATE TRIGGER habit_checkins_audit
+  AFTER INSERT OR UPDATE OR DELETE ON habit_checkins
+  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
+
+DROP TRIGGER IF EXISTS tags_audit ON tags;
+CREATE TRIGGER tags_audit
+  AFTER INSERT OR UPDATE OR DELETE ON tags
+  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
+
+DROP TRIGGER IF EXISTS reminders_audit ON reminders;
+CREATE TRIGGER reminders_audit
+  AFTER INSERT OR UPDATE OR DELETE ON reminders
+  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
+
+-- ========================================
+-- ТРИГГЕР АГРЕГАТОВ (автоматическое обновление habit_stats)
+-- ========================================
+CREATE OR REPLACE FUNCTION update_habit_stats() RETURNS TRIGGER AS $$
+DECLARE
+  v_total INTEGER;
+  v_avg_mood NUMERIC;
+  v_last_checkin DATE;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    -- Вычисляем агрегаты
+    SELECT
+      COUNT(*),
+      AVG(mood_rating),
+      MAX(checkin_date)
+    INTO v_total, v_avg_mood, v_last_checkin
+    FROM habit_checkins
+    WHERE habit_id = NEW.habit_id;
+
+    -- Обновляем habit_stats
+    INSERT INTO habit_stats (habit_id, total_checkins, average_mood, last_checkin_at, updated_at)
+    VALUES (NEW.habit_id, v_total, v_avg_mood, v_last_checkin, NOW())
+    ON CONFLICT (habit_id) DO UPDATE SET
+      total_checkins = v_total,
+      average_mood = v_avg_mood,
+      last_checkin_at = GREATEST(habit_stats.last_checkin_at, v_last_checkin),
+      updated_at = NOW();
+
+  ELSIF TG_OP = 'DELETE' THEN
+    -- Пересчитываем при удалении
+    SELECT
+      COUNT(*),
+      AVG(mood_rating),
+      MAX(checkin_date)
+    INTO v_total, v_avg_mood, v_last_checkin
+    FROM habit_checkins
+    WHERE habit_id = OLD.habit_id;
+
+    UPDATE habit_stats SET
+      total_checkins = v_total,
+      average_mood = v_avg_mood,
+      last_checkin_at = v_last_checkin,
+      updated_at = NOW()
+    WHERE habit_id = OLD.habit_id;
+
+  ELSIF TG_OP = 'UPDATE' THEN
+    -- Пересчитываем при обновлении (если изменился mood_rating)
+    SELECT
+      COUNT(*),
+      AVG(mood_rating),
+      MAX(checkin_date)
+    INTO v_total, v_avg_mood, v_last_checkin
+    FROM habit_checkins
+    WHERE habit_id = NEW.habit_id;
+
+    UPDATE habit_stats SET
+      total_checkins = v_total,
+      average_mood = v_avg_mood,
+      last_checkin_at = v_last_checkin,
+      updated_at = NOW()
+    WHERE habit_id = NEW.habit_id;
+  END IF;
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS habit_checkins_update_stats ON habit_checkins;
+CREATE TRIGGER habit_checkins_update_stats
+  AFTER INSERT OR UPDATE OR DELETE ON habit_checkins
+  FOR EACH ROW EXECUTE FUNCTION update_habit_stats();
+\end{lstlisting}
+
+\begin{lstlisting}[caption=SQL-функции]
+-- ========================================
+-- СКАЛЯРНАЯ ФУНКЦИЯ: расчёт completion rate
+-- ========================================
+CREATE OR REPLACE FUNCTION calc_completion_rate(
+  p_user_id UUID,
+  p_from DATE,
+  p_to DATE
+) RETURNS NUMERIC AS $$
+DECLARE
+  v_expected INTEGER;
+  v_actual INTEGER;
+BEGIN
+  -- Ожидаемое кол-во (дни * активные привычки)
+  SELECT COUNT(DISTINCT h.id) * (p_to - p_from + 1)
+  INTO v_expected
+  FROM habits h
+  WHERE h.user_id = p_user_id AND NOT h.is_archived;
+
+  -- Фактическое кол-во checkins
+  SELECT COUNT(*)
+  INTO v_actual
+  FROM habit_checkins hc
+  JOIN habits h ON h.id = hc.habit_id
+  WHERE h.user_id = p_user_id
+    AND hc.checkin_date BETWEEN p_from AND p_to;
+
+  IF v_expected = 0 THEN
+    RETURN 0;
+  END IF;
+
+  RETURN ROUND((v_actual::NUMERIC / v_expected) * 100, 2);
+END;
+$$ LANGUAGE plpgsql;
+
+-- ========================================
+-- ТАБЛИЧНАЯ ФУНКЦИЯ: отчёт по привычкам
+-- ========================================
+CREATE OR REPLACE FUNCTION report_user_habits(
+  p_user_id UUID,
+  p_from DATE,
+  p_to DATE
+) RETURNS TABLE(
+  habit_id UUID,
+  habit_name TEXT,
+  habit_type VARCHAR,
+  total_checkins BIGINT,
+  completion_rate NUMERIC,
+  last_checkin DATE
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    h.id,
+    h.name,
+    h.type,
+    COUNT(hc.id) as total_checkins,
+    ROUND(
+      (COUNT(hc.id)::NUMERIC / NULLIF((p_to - p_from + 1), 0)) * 100,
+      2
+    ) as completion_rate,
+    MAX(hc.checkin_date) as last_checkin
+  FROM habits h
+  LEFT JOIN habit_checkins hc ON hc.habit_id = h.id
+    AND hc.checkin_date BETWEEN p_from AND p_to
+  WHERE h.user_id = p_user_id
+  GROUP BY h.id, h.name, h.type
+  ORDER BY total_checkins DESC;
+END;
+$$ LANGUAGE plpgsql;
+\end{lstlisting}
+
+\begin{lstlisting}[caption=SQL-представления]
+-- ========================================
+-- VIEW 1: Сводка по привычкам пользователя
+-- ========================================
+CREATE OR REPLACE VIEW v_user_habit_summary AS
+SELECT
+  u.id as user_id,
+  u.email,
+  u.full_name,
+  COUNT(DISTINCT h.id) as total_habits,
+  COUNT(DISTINCT CASE WHEN h.type = 'good' THEN h.id END) as good_habits,
+  COUNT(DISTINCT CASE WHEN h.type = 'bad' THEN h.id END) as bad_habits,
+  COALESCE(SUM(hs.total_checkins), 0) as total_checkins,
+  MAX(hs.last_checkin_at) as last_activity
+FROM users u
+LEFT JOIN habits h ON h.user_id = u.id AND NOT h.is_archived
+LEFT JOIN habit_stats hs ON hs.habit_id = h.id
+GROUP BY u.id, u.email, u.full_name;
+
+-- ========================================
+-- VIEW 2: Ежедневная статистика
+-- ========================================
+CREATE OR REPLACE VIEW v_daily_completion AS
+SELECT
+  hc.checkin_date,
+  COUNT(*) as total_checkins,
+  COUNT(DISTINCT hc.user_id) as active_users,
+  COUNT(DISTINCT hc.habit_id) as habits_completed,
+  ROUND(AVG(hc.mood_rating), 2) as avg_mood,
+  SUM(hc.duration_minutes) as total_minutes
+FROM habit_checkins hc
+GROUP BY hc.checkin_date
+ORDER BY hc.checkin_date DESC;
+
+-- ========================================
+-- VIEW 3: Использование тегов
+-- ========================================
+CREATE OR REPLACE VIEW v_tag_usage AS
+SELECT
+  t.id as tag_id,
+  t.name as tag_name,
+  t.color,
+  COUNT(ht.habit_id) as usage_count,
+  COUNT(DISTINCT ht.habit_id) as unique_habits,
+  MAX(ht.assigned_at) as last_used
+FROM tags t
+LEFT JOIN habit_tags ht ON ht.tag_id = t.id
+GROUP BY t.id, t.name, t.color
+ORDER BY usage_count DESC;
+\end{lstlisting}
+
+\begin{lstlisting}[caption=SQL-индексы]
+-- ========================================
+-- ИНДЕКСЫ ДЛЯ ОПТИМИЗАЦИИ ЗАПРОСОВ
+-- ========================================
+
+-- Habits: фильтрация по пользователю и статусу
+CREATE INDEX IF NOT EXISTS idx_habits_user_id
+  ON habits(user_id)
+  WHERE NOT is_archived;
+
+-- HabitCheckins: основные запросы по habit_id и дате
+CREATE INDEX IF NOT EXISTS idx_habit_checkins_habit_date
+  ON habit_checkins(habit_id, checkin_date DESC);
+
+-- HabitCheckins: пользовательская история
+CREATE INDEX IF NOT EXISTS idx_habit_checkins_user_date
+  ON habit_checkins(user_id, checkin_date DESC);
+
+-- HabitCheckins: глобальная статистика по датам
+CREATE INDEX IF NOT EXISTS idx_habit_checkins_date
+  ON habit_checkins(checkin_date DESC);
+
+-- AuditLog: поиск по таблице, операции и времени
+CREATE INDEX IF NOT EXISTS idx_audit_log_table_op_time
+  ON audit_log(table_name, operation, changed_at DESC);
+
+-- AuditLog: история действий пользователя
+CREATE INDEX IF NOT EXISTS idx_audit_log_user_time
+  ON audit_log(user_id, changed_at DESC)
+  WHERE user_id IS NOT NULL;
+
+-- HabitTags: связи привычка-теги
+CREATE INDEX IF NOT EXISTS idx_habit_tags_habit
+  ON habit_tags(habit_id);
+
+-- HabitTags: обратный поиск по тегам
+CREATE INDEX IF NOT EXISTS idx_habit_tags_tag
+  ON habit_tags(tag_id);
+
+-- BatchImportJobs: фильтрация по пользователю и статусу
+CREATE INDEX IF NOT EXISTS idx_batch_jobs_user_status
+  ON batch_import_jobs(user_id, status);
+
+-- BatchImportErrors: поиск ошибок по job_id
+CREATE INDEX IF NOT EXISTS idx_batch_errors_job
+  ON batch_import_errors(job_id);
+\end{lstlisting}
+
+\newpage
+\section*{ПРИЛОЖЕНИЕ В Swagger документация API}
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ В Swagger документация API}
+\setcounter{figure}{0}
+\renewcommand{\thefigure}{В.\arabic{figure}}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Скриншот Swagger UI для API проекта.}}
+\caption{Интерфейс Swagger UI}
+\label{fig:swagger}
+\end{figure}
+
+\noindent Основные группы эндпойнтов представлены в разделе 2.6. Документация доступна по адресу \texttt{http://localhost:3001/api/docs}.
+
+\newpage
+\section*{ПРИЛОЖЕНИЕ Г Результаты EXPLAIN ANALYZE}
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ Г Результаты EXPLAIN ANALYZE}
+\renewcommand{\thelstlisting}{Г.\arabic{lstlisting}}
+\setcounter{lstlisting}{0}
+
+\begin{lstlisting}[caption=Запрос 1 до индексов]
+Execution Time: 145.456 ms
+Seq Scan on habit_checkins hc
+  Rows Removed by Filter: 8658
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Запрос 1 после индексов]
+Execution Time: 2.789 ms
+Index Scan using idx_habit_checkins_user_date on habit_checkins hc
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Запрос 2 до индексов]
+Execution Time: 89.456 ms
+Seq Scan on audit_log al
+  Rows Removed by Filter: 4958
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Запрос 2 после индексов]
+Execution Time: 1.289 ms
+Index Scan using idx_audit_log_user_time on audit_log al
+\end{lstlisting}
+
+\end{document}

@@ -1,0 +1,15 @@
+# Fdb version 4
+["pdflatex"] 1766619552.34886 "/home/vchesnokov/study/DB/CourseProj/report/main.tex" "main.pdf" "main" 1766619552.45334 2
+  "/etc/texmf/web2c/texmf.cnf" 1766617419.43973 475 c0e671620eb5563b2130f56340a5fde8 ""
+  "/home/vchesnokov/study/DB/CourseProj/report/main.tex" 1766619551.69386 39228 8bf080f911735d3bfe3f66b98675b265 ""
+  "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
+  "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
+  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1766617428 6800786 43fd7acdbcd2e06b742e0330485b9541 ""
+  "extarticle.cls" 0 -1 0 ""
+  "main.aux" 1766619552.34684 32 3985256e7290058c681f74d7a3565a19 "pdflatex"
+  "main.tex" 1766619551.69386 39228 8bf080f911735d3bfe3f66b98675b265 ""
+  (generated)
+  "main.aux"
+  "main.log"
+  "main.pdf"
+  (rewritten before read)

@@ -85,7 +85,12 @@ export function TagManager({ tags }: TagManagerProps) {
                   </Button>
                 </form>
                 <form action={handleDelete.bind(null, tag.id)}>
-                  <Button type="submit" size="sm" variant="destructive">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-3 text-sm text-rose-600 border-rose-200/70 hover:bg-rose-50 hover:text-rose-700"
+                  >
                     Удалить
                   </Button>
                 </form>

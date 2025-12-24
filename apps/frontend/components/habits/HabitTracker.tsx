@@ -180,17 +180,18 @@ export function HabitTracker({
 							className={`
                 aspect-square p-1 rounded-lg text-sm font-medium
                 transition-colors duration-200 flex items-center justify-center
+                border border-border/60
                 ${!isCurrentMonthDay ? "text-muted-foreground/40" : ""}
                 ${isFuture ? "cursor-not-allowed opacity-30" : "cursor-pointer"}
                 ${isPendingForDate ? "cursor-wait" : ""}
                 ${
 									isCompleted
 										? "bg-green-500/20 text-green-700 hover:bg-green-500/30"
-										: "bg-accent hover:bg-accent/80"
+										: "bg-card text-foreground/80 hover:bg-muted"
 								}
                 ${isTodayDate && !isCompleted ? "ring-2 ring-primary ring-offset-1" : ""}
                 ${isTodayDate && isCompleted ? "ring-2 ring-green-500/50 ring-offset-1" : ""}
-                disabled:hover:bg-accent
+                disabled:hover:bg-card
               `}
 						>
 							{day.getDate()}

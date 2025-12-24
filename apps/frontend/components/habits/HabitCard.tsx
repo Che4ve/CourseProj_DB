@@ -122,7 +122,7 @@ export function HabitCard({ habit, completions, allTags }: HabitCardProps) {
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="ghost" size="icon" className="h-8 w-8">
-								<span className="text-lg">⋮</span>
+								<span className="text-lg h-8">⋮</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">

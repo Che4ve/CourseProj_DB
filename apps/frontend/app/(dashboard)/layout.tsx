@@ -11,7 +11,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-background/80 backdrop-blur">
+      <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="grid items-center gap-4 lg:grid-cols-[1fr_auto_1fr]">
             <div>

@@ -34,7 +34,7 @@ export function ReminderList({ habitId, reminders }: ReminderListProps) {
               onOpenChange={(open) => setEditId(open ? reminder.id : null)}
             >
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" className="h-8 px-3 text-sm">
                   Редактировать
                 </Button>
               </DialogTrigger>
@@ -50,7 +50,12 @@ export function ReminderList({ habitId, reminders }: ReminderListProps) {
               </DialogContent>
             </Dialog>
             <form action={deleteReminder.bind(null, reminder.id, habitId)}>
-              <Button size="sm" variant="destructive" type="submit">
+              <Button
+                size="sm"
+                variant="outline"
+                type="submit"
+                className="h-8 px-3 text-sm text-rose-600 border-rose-200/70 hover:bg-rose-50 hover:text-rose-700"
+              >
                 Удалить
               </Button>
             </form>

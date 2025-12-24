@@ -80,19 +80,6 @@ export function ProfileForm({ profile }: ProfileFormProps) {
             defaultValue={toDateInput(profile.profile?.dateOfBirth)}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="themePreference">Тема</Label>
-          <select
-            id="themePreference"
-            name="themePreference"
-            defaultValue={String(profile.profile?.themePreference ?? 0)}
-            className="h-9 w-full rounded-md border border-border bg-transparent px-3 text-sm"
-          >
-            <option value="0">Светлая</option>
-            <option value="1">Темная</option>
-            <option value="2">Системная</option>
-          </select>
-        </div>
       </div>
 
       <label className="flex items-center gap-2 text-sm">

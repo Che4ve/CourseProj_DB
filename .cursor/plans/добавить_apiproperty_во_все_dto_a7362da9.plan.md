@@ -147,7 +147,3 @@ priority?: number;
 @IsArray()
 updates: BatchCheckinUpdateDto[];
 ```
-
-
-
-## Результат

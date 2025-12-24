@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/Dialog';
 import { HabitForm } from './HabitForm';
 import type { Tag } from '@/lib/typeDefinitions';
+import { Plus } from 'lucide-react';
 
 interface CreateHabitButtonProps {
   tags?: Tag[];
@@ -22,7 +23,10 @@ export function CreateHabitButton({ tags = [] }: CreateHabitButtonProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Создать привычку</Button>
+        <Button className="gap-2 shadow-sm">
+          <Plus className="h-4 w-4" />
+          Создать привычку
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>

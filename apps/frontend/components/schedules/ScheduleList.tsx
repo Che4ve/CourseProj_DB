@@ -41,7 +41,9 @@ export function ScheduleList({ habitId, schedules }: ScheduleListProps) {
           <div className="flex flex-wrap items-center gap-2">
             <Dialog open={editId === schedule.id} onOpenChange={(open) => setEditId(open ? schedule.id : null)}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline">Редактировать</Button>
+                <Button size="sm" variant="outline" className="h-8 px-3 text-sm">
+                  Редактировать
+                </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -55,7 +57,12 @@ export function ScheduleList({ habitId, schedules }: ScheduleListProps) {
               </DialogContent>
             </Dialog>
             <form action={deleteSchedule.bind(null, schedule.id, habitId)}>
-              <Button size="sm" variant="destructive" type="submit">
+              <Button
+                size="sm"
+                variant="outline"
+                type="submit"
+                className="h-8 px-3 text-sm text-rose-600 border-rose-200/70 hover:bg-rose-50 hover:text-rose-700"
+              >
                 Удалить
               </Button>
             </form>

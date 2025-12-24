@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { ALL_WEEKDAYS_MASK, WEEKDAY_OPTIONS } from '@/lib/utils/weekdayMask';
+import { CalendarDays, CalendarRange, Hash, Repeat } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ScheduleFormProps {
   habitId: string;
@@ -53,18 +55,21 @@ export function ScheduleForm({ habitId, schedule, onSuccess }: ScheduleFormProps
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form action={handleSubmit} className="space-y-5">
       <input type="hidden" name="habitId" value={habitId} />
       <input type="hidden" name="weekdaysMask" value={weekdaysMask} />
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="frequencyType">Тип частоты</Label>
+          <Label htmlFor="frequencyType" className="flex items-center gap-2">
+            <Repeat className="h-4 w-4 text-muted-foreground" />
+            Тип частоты
+          </Label>
           <select
             id="frequencyType"
             name="frequencyType"
             defaultValue={schedule?.frequencyType ?? 'daily'}
-            className="h-9 w-full rounded-md border border-border bg-transparent px-3 text-sm"
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm shadow-sm"
           >
             <option value="daily">Ежедневно</option>
             <option value="weekly">Еженедельно</option>
@@ -73,7 +78,10 @@ export function ScheduleForm({ habitId, schedule, onSuccess }: ScheduleFormProps
           </select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="frequencyValue">Значение частоты</Label>
+          <Label htmlFor="frequencyValue" className="flex items-center gap-2">
+            <Hash className="h-4 w-4 text-muted-foreground" />
+            Значение частоты
+          </Label>
           <Input
             id="frequencyValue"
             name="frequencyValue"
@@ -85,27 +93,39 @@ export function ScheduleForm({ habitId, schedule, onSuccess }: ScheduleFormProps
       </div>
 
       <div className="space-y-2">
-        <Label>Дни недели</Label>
-        <div className="flex flex-wrap gap-2">
+        <Label className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          Дни недели
+        </Label>
+        <div className="grid grid-cols-7 gap-2">
           {WEEKDAY_OPTIONS.map((day) => {
             const checked = (weekdaysMask & day.bit) !== 0;
             return (
-              <label key={day.bit} className="flex items-center gap-2 rounded border px-2 py-1">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => handleToggleDay(day.bit)}
-                />
-                <span className="text-sm">{day.label}</span>
-              </label>
+              <button
+                key={day.bit}
+                type="button"
+                aria-pressed={checked}
+                onClick={() => handleToggleDay(day.bit)}
+                className={cn(
+                  'h-9 rounded-md border text-sm font-medium transition-colors',
+                  checked
+                    ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                    : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                )}
+              >
+                {day.label}
+              </button>
             );
           })}
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="startDate">Дата начала</Label>
+          <Label htmlFor="startDate" className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            Дата начала
+          </Label>
           <Input
             id="startDate"
             name="startDate"
@@ -114,7 +134,10 @@ export function ScheduleForm({ habitId, schedule, onSuccess }: ScheduleFormProps
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="endDate">Дата окончания</Label>
+          <Label htmlFor="endDate" className="flex items-center gap-2">
+            <CalendarRange className="h-4 w-4 text-muted-foreground" />
+            Дата окончания
+          </Label>
           <Input
             id="endDate"
             name="endDate"
@@ -124,9 +147,14 @@ export function ScheduleForm({ habitId, schedule, onSuccess }: ScheduleFormProps
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="isActive" defaultChecked={schedule?.isActive ?? true} />
-        Активно
+      <label className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+        <span className="font-medium">Активно</span>
+        <input
+          type="checkbox"
+          name="isActive"
+          defaultChecked={schedule?.isActive ?? true}
+          className="h-4 w-4 rounded border border-border"
+        />
       </label>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}

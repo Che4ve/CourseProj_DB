@@ -82,59 +82,49 @@
 \begin{titlepage}
 \thispagestyle{empty}
 \begin{singlespace}
+
+% Верхняя часть - информация об университете
 \begin{center}
-Министерство науки и высшего образования Российской Федерации \\
-Федеральное государственное бюджетное образовательное учреждение высшего образования \\
-«Московский авиационный институт (национальный исследовательский университет)» \\
+МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ РОССИЙСКОЙ ФЕДЕРАЦИИ \\
+ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ ВЫСШЕГО ОБРАЗОВАНИЯ \\[0.5cm]
+\textbf{«МОСКОВСКИЙ АВИАЦИОННЫЙ ИНСТИТУТ \\
+(национальный исследовательский университет)» (МАИ)} \\[0.5cm]
 Институт № 8 «Компьютерные науки и прикладная математика» \\
 Кафедра 806 «Вычислительная математика и программирование»
 \end{center}
 
-\vspace{30mm}
+\vspace{40mm}
 
+% Средняя часть - название работы и тема
 \begin{center}
-КУРСОВОЙ ПРОЕКТ \\
-по дисциплине «Базы данных» \\
-на тему: «Информационная система для трекинга привычек»
+\textbf{КУРСОВОЙ ПРОЕКТ} \\[0.5cm]
+по дисциплине «Базы данных» \\[0.5cm]
+\textbf{Тема: «Информационная система для трекинга привычек»}
 \end{center}
 
 \vfill
 
+% Правая часть - табличка с данными
 \begin{flushright}
-Выполнил: студент группы М8О-309Б-23 \\
-Чесноков В.\,Д. \\
-Руководитель: Грубенко М.\,Д.
+\begin{tabular}{ll}
+Студент: & Чесноков В.Д. \\
+Группа: & М8О-309Б-23 \\
+Преподаватель: & Грубенко М.Д. \\
+Оценка: & \underline{\hspace{3cm}} \\
+Дата: & \underline{\hspace{3cm}} \\
+Подпись: & \underline{\hspace{3cm}} \\
+\end{tabular}
 \end{flushright}
 
-\vfill
+\vspace{20mm}
 
+% Нижняя часть - город и год
 \begin{center}
 Москва 2025
 \end{center}
+
 \end{singlespace}
 \end{titlepage}
-
-\newpage
-\section*{СПИСОК ИСПОЛНИТЕЛЕЙ}
-\addcontentsline{toc}{section}{СПИСОК ИСПОЛНИТЕЛЕЙ}
-\begin{singlespace}
-Студент группы М8О-309Б-23 Чесноков В.\,Д. --- исполнитель. \\
-Подпись: \underline{\hspace{3cm}} \hfill Дата: \underline{\hspace{2cm}} 2025~г.
-
-\vspace{5mm}
-
-Руководитель: Грубенко М.\,Д. --- руководитель работы. \\
-Подпись: \underline{\hspace{3cm}} \hfill Дата: \underline{\hspace{2cm}} 2025~г.
-\end{singlespace}
-
-\newpage
-\section*{РЕФЕРАТ}
-\addcontentsline{toc}{section}{РЕФЕРАТ}
-Отчет 30~с., 1~кн., 3~рис., 3~табл., 7~источн., 4~прил.
-
-КЛЮЧЕВЫЕ СЛОВА: база данных, PostgreSQL, триггеры, функции, представления, аудит, индексы, REST API, Swagger, контейнеризация.
-
-В отчете описана разработка информационной системы для трекинга привычек с реляционной базой данных PostgreSQL. Объект исследования --- процессы хранения и анализа данных о привычках пользователей. Цель работы --- спроектировать и реализовать базу данных и API, поддерживающие учет привычек, отметок выполнения и аналитических отчетов. Метод исследования --- проектирование реляционной схемы, нормализация, разработка ограничений целостности, индексов и экспериментальный анализ производительности с EXPLAIN ANALYZE. Полученные результаты: создана схема из 13 таблиц, реализованы триггеры аудита и агрегатов, функции и представления, batch import и REST API. Эффективность подтверждена ускорением ключевых запросов в десятки раз.
 
 \newpage
 \tableofcontents
@@ -142,13 +132,13 @@
 \newpage
 \section*{ВВЕДЕНИЕ}
 \addcontentsline{toc}{section}{ВВЕДЕНИЕ}
-Современные сервисы персональной продуктивности требуют надежного хранения данных, оперативной аналитики и прозрачного контроля изменений. Поэтому актуально проектирование информационных систем с реляционной базой данных, поддерживающей проверку целостности, аудит и оптимизацию запросов. Требования к структуре пояснительной записки определены ГОСТ 7.32-2017 \cite{gost732} и техническим заданием \cite{courseTask}.
+Сервисы трекинга привычек требуют надежного хранения данных, аналитики и контроля изменений. Поэтому важно спроектировать базу данных, которая поддерживает целостность, аудит и быструю выборку. Требования к структуре пояснительной записки определены ГОСТ 7.32-2017 \cite{gost732} и техническим заданием \cite{courseTask}.
 
 Объект исследования --- информационная система для трекинга привычек пользователей. Предмет исследования --- проектирование и реализация реляционной базы данных и API, обеспечивающих хранение, обработку и анализ данных о привычках.
 
 Цель работы --- разработать информационную систему с реляционной БД и серверным API, поддерживающими учет привычек, отметок выполнения и аналитические отчеты.
 
-Для достижения цели решены следующие задачи:
+Для достижения цели нужно было:
 \begin{enumerate}
   \item провести анализ предметной области и требований к системе;
   \item спроектировать структуру БД с необходимыми связями и типами данных;
@@ -159,7 +149,7 @@
   \item описать контейнеризацию, развертывание и тестирование.
 \end{enumerate}
 
-Практическая значимость работы заключается в создании полноценной БД и API, готовых к использованию в сервисе трекинга привычек. Структура отчета включает введение, аналитическую, проектную и технологическую части, заключение и приложения.
+Практическая ценность работы --- готовая БД и API для сервиса трекинга привычек. Отчет включает введение, аналитическую, проектную и технологическую части, заключение и приложения.
 
 \newpage
 \section{АНАЛИТИЧЕСКАЯ ЧАСТЬ}
@@ -242,10 +232,12 @@
 \normalsize
 \end{table}
 
+\setlength{\tabcolsep}{3pt}
+\small
 \subsubsection{Таблица users}
 Назначение: основная таблица пользователей системы.
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -281,7 +273,7 @@ login\_count & INTEGER & DEFAULT 0 & Количество входов \\
 \subsubsection{Таблица user\_profiles}
 Назначение: дополнительная информация о пользователе (связь 1:1 с users).
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.4cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{5.4cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -317,7 +309,7 @@ theme\_preference & SMALLINT & DEFAULT 0, CHECK (0--2) & Тема оформле
 \subsubsection{Таблица habits}
 Назначение: привычки пользователей (хорошие и плохие).
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -355,7 +347,7 @@ created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
 \subsubsection{Таблица habit\_schedules}
 Назначение: расписания для привычек (ежедневные, еженедельные и т.д.).
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{5.4cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -391,7 +383,7 @@ is\_active & BOOLEAN & DEFAULT true & Активно \\
 \subsubsection{Таблица habit\_checkins}
 Назначение: отметки выполнения привычек (транзакционная таблица).
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -429,7 +421,7 @@ created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
 \subsubsection{Таблица tags}
 Назначение: теги для категоризации привычек.
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -463,7 +455,7 @@ created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
 \subsubsection{Таблица habit\_tags}
 Назначение: связь N:M между привычками и тегами.
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -497,7 +489,7 @@ assigned\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата назначения \\
 \subsubsection{Таблица reminders}
 Назначение: напоминания для привычек.
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{5.4cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -533,7 +525,7 @@ created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
 \subsubsection{Таблица habit\_stats}
 Назначение: агрегированная статистика по привычкам (обновляется триггером).
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -571,7 +563,7 @@ updated\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата обновления \\
 \subsubsection{Таблица audit\_log}
 Назначение: журнал аудита изменений.
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -609,7 +601,7 @@ changed\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата изменения \\
 \subsubsection{Таблица \_manual\_migrations}
 Назначение: контроль применения SQL-миграций (триггеров, функций, представлений и индексов).
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{5.2cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -643,7 +635,7 @@ applied\_by & TEXT & NULL & Кто применил \\
 \subsubsection{Таблица batch\_import\_jobs}
 Назначение: задачи батчевого импорта данных.
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -685,7 +677,7 @@ completed\_at & TIMESTAMPTZ & NULL & Время завершения \\
 \subsubsection{Таблица batch\_import\_errors}
 Назначение: ошибки батчевого импорта.
 
-\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
 \hline
 \textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
 \hline
@@ -716,6 +708,8 @@ created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
 
 Уникальные типы: UUID, INTEGER, JSONB, TEXT, VARCHAR, TIMESTAMPTZ.
 
+\normalsize
+\setlength{\tabcolsep}{6pt}
 \subsection{Ограничения целостности данных}
 Для обеспечения целостности реализованы следующие типы ограничений: PRIMARY KEY на поле \texttt{id} во всех таблицах, FOREIGN KEY с каскадным удалением или установкой \texttt{NULL}, UNIQUE для уникальных атрибутов, CHECK для доменных ограничений и NOT NULL для обязательных полей. Примеры:
 \begin{itemize}
@@ -741,6 +735,7 @@ Backend предоставляет REST API с документацией в Swa
 
 Безопасность обеспечивается JWT-аутентификацией, хешированием паролей (bcrypt) и параметризованными запросами к БД. SQL-инъекции исключаются благодаря использованию ORM и параметризации.
 
+\newpage
 \subsection{Примеры SQL-запросов и анализ производительности}
 Примеры типовых запросов приведены в листинге \ref{lst:sample-queries}.
 
@@ -755,7 +750,7 @@ SELECT * FROM v_user_habit_summary
 WHERE user_id = $1;
 \end{lstlisting}
 
-Для повышения производительности созданы индексы на полях, используемых в фильтрации и сортировке. В таблице \ref{tab:perf} приведено сравнение времени выполнения запросов до и после индексирования. Полные планы EXPLAIN ANALYZE приведены в приложении Г.
+Для повышения производительности созданы индексы на полях, используемых в фильтрации и сортировке. В таблице \ref{tab:perf} приведено сравнение времени выполнения запросов до и после индексирования. Полные планы EXPLAIN ANALYZE приведены в приложении В.
 
 \begin{table}[H]
 \caption{Сравнение производительности запросов}
@@ -808,21 +803,19 @@ WHERE user_id = $1;
 \newpage
 \section*{ЗАКЛЮЧЕНИЕ}
 \addcontentsline{toc}{section}{ЗАКЛЮЧЕНИЕ}
-В ходе выполнения курсового проекта разработана информационная система для трекинга привычек. Спроектирована и реализована реляционная база данных из 13 таблиц с поддержкой связей 1:1, 1:N и N:M, реализованы ограничения целостности, триггеры аудита и агрегатов, функции и представления. Создан REST API с документацией Swagger и механизмом batch import. Проведена оптимизация запросов индексами и выполнен анализ производительности, показавший ускорение в десятки раз.
+В проекте разработана информационная система для трекинга привычек. Реализована реляционная БД из 13 таблиц со связями 1:1, 1:N и N:M, ограничениями целостности, триггерами аудита и агрегатов, функциями и представлениями. Реализован REST API и batch import. Оптимизация запросов индексами дала ускорение в десятки раз.
 
-Поставленные задачи выполнены полностью. Результаты демонстрируют корректность структуры БД, устойчивость работы и готовность системы к дальнейшему развитию, включая расширение аналитики и функциональности.
+Задачи выполнены. Система корректно работает и может развиваться дальше за счет расширения аналитики и функциональности.
 
 \newpage
 \section*{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
 \addcontentsline{toc}{section}{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
 \begin{thebibliography}{7}
-  \bibitem{gost732} ГОСТ 7.32-2017. Отчет о научно-исследовательской работе. Структура и правила оформления.
-  \bibitem{courseTask} Техническое задание на курсовую работу по дисциплине «Базы данных». 2025.
-  \bibitem{postgres} PostgreSQL 16 Documentation [Электронный ресурс]. --- URL: \url{https://www.postgresql.org/docs/16/} (дата обращения: 01.03.2025).
-  \bibitem{nestjs} NestJS Documentation [Электронный ресурс]. --- URL: \url{https://docs.nestjs.com/} (дата обращения: 01.03.2025).
-  \bibitem{prisma} Prisma Documentation [Электронный ресурс]. --- URL: \url{https://www.prisma.io/docs} (дата обращения: 01.03.2025).
-  \bibitem{nextjs} Next.js Documentation [Электронный ресурс]. --- URL: \url{https://nextjs.org/docs} (дата обращения: 01.03.2025).
-  \bibitem{docker} Docker Documentation [Электронный ресурс]. --- URL: \url{https://docs.docker.com/} (дата обращения: 01.03.2025).
+  \bibitem{postgres} PostgreSQL 16 Documentation [Электронный ресурс]. --- URL: \url{https://www.postgresql.org/docs/16/}.
+  \bibitem{nestjs} NestJS Documentation [Электронный ресурс]. --- URL: \url{https://docs.nestjs.com/}.
+  \bibitem{prisma} Prisma Documentation [Электронный ресурс]. --- URL: \url{https://www.prisma.io/docs}.
+  \bibitem{nextjs} Next.js Documentation [Электронный ресурс]. --- URL: \url{https://nextjs.org/docs}.
+  \bibitem{docker} Docker Documentation [Электронный ресурс]. --- URL: \url{https://docs.docker.com/}.
 \end{thebibliography}
 
 \newpage
@@ -835,14 +828,15 @@ WHERE user_id = $1;
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
-    node distance=1.7cm and 2.2cm,
+    node distance=2.0cm and 2.6cm,
     table/.style={
         rectangle split, rectangle split parts=2,
         draw, fill=gray!5, rounded corners,
         minimum width=3.2cm, font=\scriptsize\ttfamily,
         align=left
     },
-    edge/.style={->, >=Latex, thick}
+    edge/.style={->, >=Latex, thick},
+    rel/.style={midway, fill=white, inner sep=1pt, font=\scriptsize}
 ]
     \node[table] (profiles) {
         user\_profiles
@@ -961,18 +955,18 @@ WHERE user_id = $1;
         applied\_at: TIMESTAMPTZ
     };
 
-    \draw[edge] (users) -- node[midway, above] {1:1} (profiles);
-    \draw[edge] (users) -- node[midway, above] {1:N} (habits);
-    \draw[edge] (users) -- node[midway, left] {1:N} (checkins);
-    \draw[edge] (users) -- node[midway, left] {1:N} (batch_jobs);
-    \draw[edge] (users) -- node[midway, left] {1:N} (audit);
-    \draw[edge] (habits) -- node[midway, right] {1:N} (checkins);
-    \draw[edge] (habits) -- node[midway, right] {1:N} (schedules);
-    \draw[edge] (habits) -- node[midway, right] {1:N} (reminders);
-    \draw[edge] (habits) -- node[midway, right] {1:1} (stats);
-    \draw[edge] (habits) -- node[midway, right] {1:N} (habit_tags);
-    \draw[edge] (tags) -- node[midway, right] {1:N} (habit_tags);
-    \draw[edge] (batch_jobs) -- node[midway, left] {1:N} (batch_errors);
+    \draw[edge] (users) -- node[rel, above, yshift=2pt] {1:1} (profiles);
+    \draw[edge] (users) -- node[rel, above, yshift=2pt] {1:N} (habits);
+    \draw[edge] (users) -- node[rel, left, xshift=-6pt] {1:N} (checkins);
+    \draw[edge] (users) -- node[rel, left, xshift=-6pt] {1:N} (batch_jobs);
+    \draw[edge] (users) -- node[rel, left, xshift=-6pt] {1:N} (audit);
+    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:N} (checkins);
+    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:N} (schedules);
+    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:N} (reminders);
+    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:1} (stats);
+    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:N} (habit_tags);
+    \draw[edge] (tags) -- node[rel, right, xshift=6pt] {1:N} (habit_tags);
+    \draw[edge] (batch_jobs) -- node[rel, left, xshift=-6pt] {1:N} (batch_errors);
 \end{tikzpicture}}
 \caption{Логическая схема базы данных}
 \label{fig:db-schema}
@@ -990,23 +984,8 @@ WHERE user_id = $1;
 \end{itemize}
 
 \newpage
-\section*{ПРИЛОЖЕНИЕ В Swagger документация API}
-\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ В Swagger документация API}
-\setcounter{figure}{0}
-\renewcommand{\thefigure}{В.\arabic{figure}}
-
-\begin{figure}[H]
-\centering
-\fbox{\parbox{0.9\linewidth}{\centering Скриншот Swagger UI для API проекта.}}
-\caption{Интерфейс Swagger UI}
-\label{fig:swagger}
-\end{figure}
-
-\noindent Основные группы эндпойнтов представлены в разделе 2.6. Документация доступна по адресу \texttt{http://localhost:3001/api/docs}.
-
-\newpage
-\section*{ПРИЛОЖЕНИЕ Г Результаты EXPLAIN ANALYZE}
-\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ Г Результаты EXPLAIN ANALYZE}
+\section*{ПРИЛОЖЕНИЕ В Результаты EXPLAIN ANALYZE}
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ В Результаты EXPLAIN ANALYZE}
 Полные планы выполнения запросов приведены в файле \texttt{docs/perf.md}. Основные результаты оптимизации:
 \begin{itemize}
   \item история отметок пользователя за период: 145.456 мс \(\rightarrow\) 2.789 мс (52x быстрее);

@@ -12,13 +12,16 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{array}
+\usepackage{tabularx}
 \usepackage{booktabs}
+\usepackage{longtable}
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{caption}
 \usepackage[hidelinks]{hyperref}
 \usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta}
+\usetikzlibrary{positioning,arrows.meta,shapes.multipart,calc,shadows}
+\usepackage{titlesec}
 \usepackage{fancyhdr}
 
 \geometry{
@@ -35,6 +38,10 @@
 
 \setlist[itemize]{label=--, leftmargin=1.25cm, itemsep=0pt, topsep=0pt}
 \setlist[enumerate]{label=\arabic*), leftmargin=1.25cm, itemsep=0pt, topsep=0pt}
+
+\titleformat{\section}{\normalfont\Large}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize}{\thesubsubsection}{1em}{}
 
 \DeclareCaptionFont{singlespacing}{\setstretch{1}}
 \captionsetup{labelsep=emdash, font=singlespacing}
@@ -202,7 +209,7 @@
   \item \texttt{batch\_import\_jobs} --- \texttt{batch\_import\_errors} (1:N).
 \end{itemize}
 
-Полная ER-диаграмма представлена в приложении А (рисунок \ref{fig:erd}).
+Логическая схема базы данных с основными сущностями и атрибутами представлена в приложении А (рисунок \ref{fig:db-schema}).
 
 \subsection{Описание таблиц базы данных}
 Ключевые таблицы и их назначение приведены в таблице \ref{tab:db-tables}. Полный перечень содержит 13 таблиц: \texttt{users}, \texttt{user\_profiles}, \texttt{habits}, \texttt{habit\_schedules}, \texttt{habit\_checkins}, \texttt{tags}, \texttt{habit\_tags}, \texttt{reminders}, \texttt{habit\_stats}, \texttt{audit\_log}, \texttt{\_manual\_migrations}, \texttt{batch\_import\_jobs}, \texttt{batch\_import\_errors}.
@@ -212,67 +219,515 @@
 \label{tab:db-tables}
 \centering
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{p{3.5cm} p{7.5cm} p{4.2cm}}
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.4cm} X >{\raggedright\arraybackslash}p{4.0cm}}
 \toprule
 Таблица & Назначение & Ключевые поля \\
 \midrule
 \texttt{users} & учетные записи пользователей & \texttt{id}, \texttt{email} \\
-\texttt{user\_profiles} & профиль пользователя & \texttt{user\_id}, \texttt{timezone} \\
+\texttt{user\_\allowbreak profiles} & профиль пользователя & \texttt{user\_id}, \texttt{timezone} \\
 \texttt{habits} & перечень привычек & \texttt{user\_id}, \texttt{name}, \texttt{type} \\
-\texttt{habit\_schedules} & расписания привычек & \texttt{habit\_id}, \texttt{frequency\_type} \\
-\texttt{habit\_checkins} & отметки выполнения & \texttt{habit\_id}, \texttt{checkin\_date} \\
+\texttt{habit\_\allowbreak schedules} & расписания привычек & \texttt{habit\_id}, \texttt{frequency\_type} \\
+\texttt{habit\_\allowbreak checkins} & отметки выполнения & \texttt{habit\_id}, \texttt{checkin\_date} \\
 \texttt{tags} & справочник тегов & \texttt{name}, \texttt{slug} \\
-\texttt{habit\_tags} & связь привычек и тегов & \texttt{habit\_id}, \texttt{tag\_id} \\
+\texttt{habit\_\allowbreak tags} & связь привычек и тегов & \texttt{habit\_id}, \texttt{tag\_id} \\
 \texttt{reminders} & напоминания & \texttt{habit\_id}, \texttt{reminder\_time} \\
-\texttt{habit\_stats} & агрегированная статистика & \texttt{habit\_id}, \texttt{total\_checkins} \\
-\texttt{audit\_log} & журнал аудита & \texttt{table\_name}, \texttt{operation} \\
-\texttt{batch\_import\_jobs} & задания импорта & \texttt{entity\_type}, \texttt{status} \\
-\texttt{batch\_import\_errors} & ошибки импорта & \texttt{job\_id}, \texttt{error\_message} \\
-\texttt{\_manual\_migrations} & учет SQL-миграций & \texttt{name}, \texttt{status} \\
+\texttt{habit\_\allowbreak stats} & агрегированная статистика & \texttt{habit\_id}, \texttt{total\_checkins} \\
+\texttt{audit\_\allowbreak log} & журнал аудита & \texttt{table\_name}, \texttt{operation} \\
+\texttt{batch\_\allowbreak import\_\allowbreak jobs} & задания импорта & \texttt{entity\_type}, \texttt{status} \\
+\texttt{batch\_\allowbreak import\_\allowbreak errors} & ошибки импорта & \texttt{job\_id}, \texttt{error\_message} \\
+\texttt{\_manual\_\allowbreak migrations} & учет SQL-миграций & \texttt{name}, \texttt{status} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
+\normalsize
 \end{table}
 
+\subsubsection{Таблица users}
+Назначение: основная таблица пользователей системы.
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY, DEFAULT gen\_random\_uuid() & Уникальный идентификатор \\
+\hline
+email & TEXT & UNIQUE, NOT NULL & Email пользователя \\
+\hline
+password\_hash & TEXT & NOT NULL & Хеш пароля \\
+\hline
+full\_name & TEXT & NOT NULL & Полное имя \\
+\hline
+role & VARCHAR(50) & DEFAULT 'user' & Роль пользователя \\
+\hline
+is\_active & BOOLEAN & DEFAULT true & Активен ли аккаунт \\
+\hline
+created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
+\hline
+login\_count & INTEGER & DEFAULT 0 & Количество входов \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, TEXT, VARCHAR, BOOLEAN, TIMESTAMPTZ, INTEGER.
+
+\subsubsection{Таблица user\_profiles}
+Назначение: дополнительная информация о пользователе (связь 1:1 с users).
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY, DEFAULT gen\_random\_uuid() & Уникальный идентификатор \\
+\hline
+user\_id & UUID & UNIQUE, NOT NULL, FK -> users & Ссылка на пользователя \\
+\hline
+bio & TEXT & NULL & Биография \\
+\hline
+avatar\_url & TEXT & NULL & URL аватара \\
+\hline
+timezone & VARCHAR(100) & DEFAULT 'UTC' & Часовой пояс \\
+\hline
+date\_of\_birth & DATE & NULL & Дата рождения \\
+\hline
+notification\_enabled & BOOLEAN & DEFAULT true & Уведомления включены \\
+\hline
+theme\_preference & SMALLINT & DEFAULT 0, CHECK (0--2) & Тема оформления \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, TEXT, VARCHAR, DATE, BOOLEAN, SMALLINT.
+
+\subsubsection{Таблица habits}
+Назначение: привычки пользователей (хорошие и плохие).
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY, DEFAULT gen\_random\_uuid() & Уникальный идентификатор \\
+\hline
+user\_id & UUID & NOT NULL, FK -> users & Владелец привычки \\
+\hline
+name & TEXT & NOT NULL & Название привычки \\
+\hline
+description & TEXT & NULL & Описание \\
+\hline
+type & VARCHAR(10) & NOT NULL, CHECK IN ('good', 'bad') & Тип привычки \\
+\hline
+priority & SMALLINT & DEFAULT 0, CHECK (0--10) & Приоритет \\
+\hline
+is\_archived & BOOLEAN & DEFAULT false & Архивирована \\
+\hline
+display\_order & INTEGER & DEFAULT 0 & Порядок отображения \\
+\hline
+created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, TEXT, VARCHAR, SMALLINT, BOOLEAN, INTEGER, TIMESTAMPTZ.
+
+\subsubsection{Таблица habit\_schedules}
+Назначение: расписания для привычек (ежедневные, еженедельные и т.д.).
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+habit\_id & UUID & NOT NULL, FK -> habits & Ссылка на привычку \\
+\hline
+frequency\_type & VARCHAR(20) & CHECK IN (...) & Тип частоты \\
+\hline
+frequency\_value & INTEGER & DEFAULT 1, CHECK > 0 & Значение частоты \\
+\hline
+weekdays\_mask & SMALLINT & DEFAULT 127 & Битовая маска дней недели \\
+\hline
+start\_date & DATE & NOT NULL & Дата начала \\
+\hline
+end\_date & DATE & NULL & Дата окончания \\
+\hline
+is\_active & BOOLEAN & DEFAULT true & Активно \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, VARCHAR, INTEGER, SMALLINT, DATE, BOOLEAN.
+
+\subsubsection{Таблица habit\_checkins}
+Назначение: отметки выполнения привычек (транзакционная таблица).
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+habit\_id & UUID & NOT NULL, FK -> habits & Ссылка на привычку \\
+\hline
+user\_id & UUID & NOT NULL, FK -> users & Ссылка на пользователя \\
+\hline
+checkin\_date & DATE & NOT NULL & Дата отметки \\
+\hline
+checkin\_time & TIME & DEFAULT CURRENT\_TIME & Время отметки \\
+\hline
+notes & TEXT & NULL & Заметки \\
+\hline
+mood\_rating & SMALLINT & CHECK (1--5) & Оценка настроения \\
+\hline
+duration\_minutes & INTEGER & NULL & Длительность в минутах \\
+\hline
+created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, DATE, TIME, TEXT, SMALLINT, INTEGER, TIMESTAMPTZ. UNIQUE: (habit\_id, checkin\_date).
+
+\subsubsection{Таблица tags}
+Назначение: теги для категоризации привычек.
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+name & VARCHAR(100) & UNIQUE, NOT NULL & Название тега \\
+\hline
+slug & TEXT & UNIQUE, NOT NULL & URL-friendly имя \\
+\hline
+color & VARCHAR(7) & DEFAULT '\#gray' & Цвет \\
+\hline
+usage\_count & INTEGER & DEFAULT 0 & Счётчик использований \\
+\hline
+is\_system & BOOLEAN & DEFAULT false & Системный тег \\
+\hline
+created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, VARCHAR, TEXT, INTEGER, BOOLEAN, TIMESTAMPTZ.
+
+\subsubsection{Таблица habit\_tags}
+Назначение: связь N:M между привычками и тегами.
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+habit\_id & UUID & NOT NULL, FK -> habits & Ссылка на привычку \\
+\hline
+tag\_id & UUID & NOT NULL, FK -> tags & Ссылка на тег \\
+\hline
+priority & SMALLINT & DEFAULT 0 & Приоритет \\
+\hline
+is\_primary & BOOLEAN & DEFAULT false & Основной тег \\
+\hline
+assigned\_by & VARCHAR(50) & DEFAULT 'user' & Кто назначил \\
+\hline
+assigned\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата назначения \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, SMALLINT, BOOLEAN, VARCHAR, TIMESTAMPTZ. UNIQUE: (habit\_id, tag\_id).
+
+\subsubsection{Таблица reminders}
+Назначение: напоминания для привычек.
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+habit\_id & UUID & NOT NULL, FK -> habits & Ссылка на привычку \\
+\hline
+reminder\_time & TIME & NOT NULL & Время напоминания \\
+\hline
+days\_of\_week & SMALLINT & DEFAULT 127 & Дни недели (битовая маска) \\
+\hline
+notification\_text & TEXT & NULL & Текст уведомления \\
+\hline
+delivery\_method & VARCHAR(20) & DEFAULT 'push', CHECK IN (...) & Метод доставки \\
+\hline
+is\_active & BOOLEAN & DEFAULT true & Активно \\
+\hline
+created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, TIME, SMALLINT, TEXT, VARCHAR, BOOLEAN, TIMESTAMPTZ.
+
+\subsubsection{Таблица habit\_stats}
+Назначение: агрегированная статистика по привычкам (обновляется триггером).
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+habit\_id & UUID & UNIQUE, NOT NULL, FK -> habits & Ссылка на привычку \\
+\hline
+total\_checkins & INTEGER & DEFAULT 0 & Всего отметок \\
+\hline
+current\_streak & INTEGER & DEFAULT 0 & Текущая серия \\
+\hline
+longest\_streak & INTEGER & DEFAULT 0 & Лучшая серия \\
+\hline
+completion\_rate & NUMERIC(5,2) & DEFAULT 0.00 & Процент выполнения \\
+\hline
+average\_mood & NUMERIC(3,2) & NULL & Средняя оценка настроения \\
+\hline
+last\_checkin\_at & DATE & NULL & Последняя отметка \\
+\hline
+updated\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата обновления \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, INTEGER, NUMERIC, DATE, TIMESTAMPTZ.
+
+\subsubsection{Таблица audit\_log}
+Назначение: журнал аудита изменений.
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+table\_name & VARCHAR(100) & NOT NULL & Название таблицы \\
+\hline
+operation & VARCHAR(10) & NOT NULL, CHECK IN (...) & Тип операции \\
+\hline
+record\_id & UUID & NULL & ID изменённой записи \\
+\hline
+user\_id & UUID & NULL & ID пользователя \\
+\hline
+old\_data & JSONB & NULL & Старые данные \\
+\hline
+new\_data & JSONB & NULL & Новые данные \\
+\hline
+ip\_address & INET & NULL & IP-адрес \\
+\hline
+changed\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата изменения \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, VARCHAR, JSONB, INET, TIMESTAMPTZ.
+
+\subsubsection{Таблица \_manual\_migrations}
+Назначение: контроль применения SQL-миграций (триггеров, функций, представлений и индексов).
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+name & VARCHAR(255) & UNIQUE, NOT NULL & Название миграции \\
+\hline
+checksum & CHAR(64) & NULL & SHA-256 hash \\
+\hline
+applied\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата применения \\
+\hline
+execution\_time\_ms & INTEGER & NULL & Время выполнения \\
+\hline
+status & VARCHAR(20) & DEFAULT 'success', CHECK IN (...) & Статус \\
+\hline
+applied\_by & TEXT & NULL & Кто применил \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, VARCHAR, CHAR, TIMESTAMPTZ, INTEGER, TEXT.
+
+\subsubsection{Таблица batch\_import\_jobs}
+Назначение: задачи батчевого импорта данных.
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+user\_id & UUID & FK -> users, ON DELETE SET NULL & Пользователь \\
+\hline
+entity\_type & VARCHAR(50) & NOT NULL & Тип сущности \\
+\hline
+status & VARCHAR(20) & CHECK IN (...) & Статус \\
+\hline
+total\_records & INTEGER & DEFAULT 0 & Всего записей \\
+\hline
+success\_count & INTEGER & DEFAULT 0 & Успешных \\
+\hline
+error\_count & INTEGER & DEFAULT 0 & Ошибок \\
+\hline
+progress\_percent & NUMERIC(5,2) & DEFAULT 0.00 & Прогресс \\
+\hline
+file\_size\_bytes & BIGINT & NULL & Размер файла \\
+\hline
+started\_at & TIMESTAMPTZ & DEFAULT NOW() & Время начала \\
+\hline
+completed\_at & TIMESTAMPTZ & NULL & Время завершения \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, VARCHAR, INTEGER, NUMERIC, BIGINT, TIMESTAMPTZ.
+
+\subsubsection{Таблица batch\_import\_errors}
+Назначение: ошибки батчевого импорта.
+
+\begin{longtable}{|p{3cm}|p{2.5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+id & UUID & PRIMARY KEY & Уникальный идентификатор \\
+\hline
+job\_id & UUID & NOT NULL, FK -> batch\_import\_jobs & Ссылка на задачу \\
+\hline
+row\_number & INTEGER & NULL & Номер строки \\
+\hline
+record\_data & JSONB & NOT NULL & Данные записи \\
+\hline
+error\_message & TEXT & NOT NULL & Сообщение об ошибке \\
+\hline
+error\_code & VARCHAR(50) & NULL & Код ошибки \\
+\hline
+created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
+\hline
+\end{longtable}
+
+Уникальные типы: UUID, INTEGER, JSONB, TEXT, VARCHAR, TIMESTAMPTZ.
+
 \subsection{Ограничения целостности данных}
-Для обеспечения целостности реализованы следующие типы ограничений: PRIMARY KEY на поле \texttt{id} во всех таблицах, FOREIGN KEY с каскадным удалением или установкой \texttt{NULL}, UNIQUE для уникальных атрибутов, CHECK для доменных ограничений и NOT NULL для обязательных полей. Примеры ограничений приведены в листинге \ref{lst:constraints}.
-
-\begin{lstlisting}[caption=Примеры ограничений целостности, label=lst:constraints]
-ALTER TABLE habits
-  ADD CONSTRAINT habits_type_check CHECK (type IN ('good', 'bad'));
-
-ALTER TABLE habit_checkins
-  ADD CONSTRAINT habit_checkins_unique UNIQUE (habit_id, checkin_date);
-
-ALTER TABLE habits
-  ADD CONSTRAINT habits_user_fk
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-\end{lstlisting}
+Для обеспечения целостности реализованы следующие типы ограничений: PRIMARY KEY на поле \texttt{id} во всех таблицах, FOREIGN KEY с каскадным удалением или установкой \texttt{NULL}, UNIQUE для уникальных атрибутов, CHECK для доменных ограничений и NOT NULL для обязательных полей. Примеры:
+\begin{itemize}
+  \item PRIMARY KEY: \texttt{id UUID PRIMARY KEY DEFAULT gen\_random\_uuid()};
+  \item FOREIGN KEY: \texttt{habits.user\_id -> users.id ON DELETE CASCADE};
+  \item UNIQUE: \texttt{habit\_checkins(habit\_id, checkin\_date)};
+  \item CHECK: \texttt{habits.type IN ('good', 'bad')}, \texttt{habit\_checkins.mood\_rating BETWEEN 1 AND 5};
+  \item NOT NULL: \texttt{users.email}, \texttt{habits.name}, \texttt{habits.type}.
+\end{itemize}
 
 \subsection{Реализация SQL-функциональности}
-Базовые CRUD-операции реализованы через Prisma ORM, а сложные выборки и отчеты --- через параметризованные SQL-запросы. Реализованы триггеры аудита и автоматического обновления агрегированной статистики, скалярная функция \texttt{calc\_completion\_rate} и табличная функция \texttt{report\_user\_habits}. Полные скрипты приведены в приложении Б.
-
-В листинге \ref{lst:audit-fragment} приведен фрагмент функции аудита.
-
-\begin{lstlisting}[caption=Фрагмент функции аудита, label=lst:audit-fragment]
-CREATE OR REPLACE FUNCTION audit_trigger_fn() RETURNS TRIGGER AS $$
-DECLARE
-  v_user_id UUID;
-BEGIN
-  v_user_id := nullif(current_setting('app.user_id', true), '')::UUID;
-  INSERT INTO audit_log (table_name, operation, record_id, user_id, old_data, new_data, changed_at)
-  VALUES (
-    TG_TABLE_NAME::VARCHAR,
-    TG_OP::VARCHAR,
-    COALESCE(NEW.id, OLD.id),
-    v_user_id,
-    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN row_to_json(OLD)::jsonb ELSE NULL END,
-    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW)::jsonb ELSE NULL END,
-    NOW()
-  );
-  RETURN COALESCE(NEW, OLD);
-END;
-$$ LANGUAGE plpgsql;
-\end{lstlisting}
+Базовые CRUD-операции реализованы через Prisma ORM, а сложные выборки и отчеты --- через параметризованные SQL-запросы. Реализованы триггеры аудита и автоматического обновления агрегированной статистики, скалярная функция \texttt{calc\_completion\_rate} и табличная функция \texttt{report\_user\_habits}. Полные скрипты приведены в приложении Б и в файлах \texttt{packages/db/sql/001\_triggers.sql}--\texttt{004\_indexes.sql}.
 
 \subsection{Описание API и взаимодействия с БД}
 Backend предоставляет REST API с документацией в Swagger. Основные группы эндпойнтов:
@@ -322,22 +777,7 @@ WHERE user_id = $1;
 \newpage
 \section{ТЕХНОЛОГИЧЕСКАЯ ЧАСТЬ}
 \subsection{Контейнеризация и развертывание}
-Развертывание системы выполняется с помощью Docker Compose. Используются три сервиса: база данных PostgreSQL, backend и frontend. Фрагмент конфигурации приведен в листинге \ref{lst:docker-compose}.
-
-\begin{lstlisting}[caption=Фрагмент docker-compose.yml, label=lst:docker-compose]
-services:
-  db:
-    image: postgres:16-alpine
-    ports:
-      - "5434:5432"
-  backend:
-    build: apps/backend
-    depends_on:
-      db:
-        condition: service_healthy
-  frontend:
-    build: apps/frontend
-\end{lstlisting}
+Развертывание системы выполняется с помощью Docker Compose. Используются три сервиса: база данных PostgreSQL, backend и frontend. Конфигурация размещена в файле \texttt{docker-compose.yml} и описывает порты, переменные окружения и зависимости сервисов.
 
 После запуска контейнеров выполняются миграции и применение SQL-скриптов: \texttt{pnpm db:migrate}, \texttt{pnpm db:sql}, \texttt{pnpm db:seed}. Swagger доступен по адресу \texttt{http://localhost:3001/api/docs}.
 
@@ -363,18 +803,7 @@ services:
 \end{tabular}
 \end{table}
 
-Примеры проверочных запросов:
-\begin{lstlisting}[caption=Контрольные запросы для тестирования, label=lst:test-queries]
-SELECT * FROM audit_log
-ORDER BY changed_at DESC
-LIMIT 5;
-
-SELECT calc_completion_rate($1, '2024-01-01', '2024-12-31');
-
-SELECT * FROM v_daily_completion
-ORDER BY checkin_date DESC
-LIMIT 7;
-\end{lstlisting}
+Примеры проверочных запросов включают выборку последних записей аудита, расчет \texttt{calc\_completion\_rate} за период и получение ежедневной статистики из представления \texttt{v\_daily\_completion}.
 
 \newpage
 \section*{ЗАКЛЮЧЕНИЕ}
@@ -397,364 +826,168 @@ LIMIT 7;
 \end{thebibliography}
 
 \newpage
-\section*{ПРИЛОЖЕНИЕ А ER-диаграмма базы данных}
-\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ А ER-диаграмма базы данных}
+\section*{ПРИЛОЖЕНИЕ А Логическая схема базы данных}
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ А Логическая схема базы данных}
 \setcounter{figure}{0}
 \renewcommand{\thefigure}{А.\arabic{figure}}
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[node distance=1.8cm and 2.6cm]
-\node[block] (users) {\texttt{users}};
-\node[block, right=of users] (profiles) {\texttt{user\_profiles}};
-\node[block, below=of users] (habits) {\texttt{habits}};
-\node[block, right=of habits] (stats) {\texttt{habit\_stats}};
-\node[block, below=of habits] (checkins) {\texttt{habit\_checkins}};
-\node[block, right=of checkins] (habit_tags) {\texttt{habit\_tags}};
-\node[block, right=of habit_tags] (tags) {\texttt{tags}};
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1.7cm and 2.2cm,
+    table/.style={
+        rectangle split, rectangle split parts=2,
+        draw, fill=gray!5, rounded corners,
+        minimum width=3.2cm, font=\scriptsize\ttfamily,
+        align=left
+    },
+    edge/.style={->, >=Latex, thick}
+]
+    \node[table] (profiles) {
+        user\_profiles
+        \nodepart{second}
+        \underline{id: UUID} \\
+        user\_id: UUID (FK) \\
+        bio: TEXT \\
+        timezone: VARCHAR
+    };
 
-\draw[arrow] (users) -- node[above]{1:1} (profiles);
-\draw[arrow] (users) -- node[right]{1:N} (habits);
-\draw[arrow] (habits) -- node[above]{1:1} (stats);
-\draw[arrow] (habits) -- node[right]{1:N} (checkins);
-\draw[arrow] (habits) -- (habit_tags);
-\draw[arrow] (tags) -- (habit_tags);
-\end{tikzpicture}
-\caption{Упрощенная ER-диаграмма ключевых сущностей}
-\label{fig:erd}
+    \node[table, right=of profiles] (users) {
+        users
+        \nodepart{second}
+        \underline{id: UUID} \\
+        email: TEXT \\
+        password\_hash: TEXT \\
+        role: VARCHAR
+    };
+
+    \node[table, right=of users] (habits) {
+        habits
+        \nodepart{second}
+        \underline{id: UUID} \\
+        user\_id: UUID (FK) \\
+        name: TEXT \\
+        type: VARCHAR
+    };
+
+    \node[table, right=of habits] (tags) {
+        tags
+        \nodepart{second}
+        \underline{id: UUID} \\
+        name: VARCHAR \\
+        slug: TEXT \\
+        color: VARCHAR
+    };
+
+    \node[table, below=of users] (checkins) {
+        habit\_checkins
+        \nodepart{second}
+        \underline{id: UUID} \\
+        habit\_id: UUID (FK) \\
+        user\_id: UUID (FK) \\
+        checkin\_date: DATE
+    };
+
+    \node[table, below=of habits] (schedules) {
+        habit\_schedules
+        \nodepart{second}
+        \underline{id: UUID} \\
+        habit\_id: UUID (FK) \\
+        frequency\_type: VARCHAR \\
+        start\_date: DATE
+    };
+
+    \node[table, below=of tags] (habit_tags) {
+        habit\_tags
+        \nodepart{second}
+        \underline{id: UUID} \\
+        habit\_id: UUID (FK) \\
+        tag\_id: UUID (FK) \\
+        assigned\_at: TIMESTAMPTZ
+    };
+
+    \node[table, below=of profiles] (audit) {
+        audit\_log
+        \nodepart{second}
+        \underline{id: UUID} \\
+        table\_name: VARCHAR \\
+        operation: VARCHAR \\
+        changed\_at: TIMESTAMPTZ
+    };
+
+    \node[table, below=of checkins] (stats) {
+        habit\_stats
+        \nodepart{second}
+        \underline{id: UUID} \\
+        habit\_id: UUID (FK) \\
+        total\_checkins: INTEGER \\
+        updated\_at: TIMESTAMPTZ
+    };
+
+    \node[table, below=of schedules] (reminders) {
+        reminders
+        \nodepart{second}
+        \underline{id: UUID} \\
+        habit\_id: UUID (FK) \\
+        reminder\_time: TIME \\
+        is\_active: BOOLEAN
+    };
+
+    \node[table, below=of audit] (batch_jobs) {
+        batch\_import\_jobs
+        \nodepart{second}
+        \underline{id: UUID} \\
+        user\_id: UUID (FK) \\
+        status: VARCHAR \\
+        started\_at: TIMESTAMPTZ
+    };
+
+    \node[table, below=of batch_jobs] (batch_errors) {
+        batch\_import\_errors
+        \nodepart{second}
+        \underline{id: UUID} \\
+        job\_id: UUID (FK) \\
+        error\_message: TEXT \\
+        created\_at: TIMESTAMPTZ
+    };
+
+    \node[table, below=of habit_tags] (manual) {
+        \_manual\_migrations
+        \nodepart{second}
+        \underline{id: UUID} \\
+        name: VARCHAR \\
+        status: VARCHAR \\
+        applied\_at: TIMESTAMPTZ
+    };
+
+    \draw[edge] (users) -- node[midway, above] {1:1} (profiles);
+    \draw[edge] (users) -- node[midway, above] {1:N} (habits);
+    \draw[edge] (users) -- node[midway, left] {1:N} (checkins);
+    \draw[edge] (users) -- node[midway, left] {1:N} (batch_jobs);
+    \draw[edge] (users) -- node[midway, left] {1:N} (audit);
+    \draw[edge] (habits) -- node[midway, right] {1:N} (checkins);
+    \draw[edge] (habits) -- node[midway, right] {1:N} (schedules);
+    \draw[edge] (habits) -- node[midway, right] {1:N} (reminders);
+    \draw[edge] (habits) -- node[midway, right] {1:1} (stats);
+    \draw[edge] (habits) -- node[midway, right] {1:N} (habit_tags);
+    \draw[edge] (tags) -- node[midway, right] {1:N} (habit_tags);
+    \draw[edge] (batch_jobs) -- node[midway, left] {1:N} (batch_errors);
+\end{tikzpicture}}
+\caption{Логическая схема базы данных}
+\label{fig:db-schema}
 \end{figure}
-
-\noindent Код ER-диаграммы в формате Mermaid:
-\begin{lstlisting}
-erDiagram
-    users ||--|| user_profiles : "1:1"
-    users ||--o{ habits : "1:N"
-    users ||--o{ habit_checkins : "1:N"
-    users ||--o{ batch_import_jobs : "1:N"
-
-    habits ||--o{ habit_schedules : "1:N"
-    habits ||--o{ habit_checkins : "1:N"
-    habits ||--o{ reminders : "1:N"
-    habits ||--|| habit_stats : "1:1"
-
-    habits }o--o{ tags : "N:M through habit_tags"
-    habits ||--o{ habit_tags : "1:N"
-    tags ||--o{ habit_tags : "1:N"
-
-    batch_import_jobs ||--o{ batch_import_errors : "1:N"
-\end{lstlisting}
 
 \newpage
 \section*{ПРИЛОЖЕНИЕ Б Примеры SQL-скриптов}
 \addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ Б Примеры SQL-скриптов}
-\renewcommand{\thelstlisting}{Б.\arabic{lstlisting}}
-\setcounter{lstlisting}{0}
-
-\begin{lstlisting}[caption=Триггеры аудита и агрегатов]
--- Таблица контроля ручных миграций уже создана через Prisma schema
-
--- ========================================
--- ФУНКЦИЯ АУДИТА (с правильным user_id и old+new)
--- ========================================
-CREATE OR REPLACE FUNCTION audit_trigger_fn() RETURNS TRIGGER AS $$
-DECLARE
-  v_user_id UUID;
-BEGIN
-  -- Получаем user_id из SET LOCAL app.user_id (если есть)
-  BEGIN
-    v_user_id := nullif(current_setting('app.user_id', true), '')::UUID;
-  EXCEPTION WHEN OTHERS THEN
-    v_user_id := NULL;
-  END;
-
-  -- Записываем аудит
-  INSERT INTO audit_log (table_name, operation, record_id, user_id, old_data, new_data, changed_at)
-  VALUES (
-    TG_TABLE_NAME::VARCHAR,
-    TG_OP::VARCHAR,
-    COALESCE(NEW.id, OLD.id),
-    v_user_id,
-    -- UPDATE: записываем и old, и new
-    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN row_to_json(OLD)::jsonb ELSE NULL END,
-    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW)::jsonb ELSE NULL END,
-    NOW()
-  );
-
-  -- Правильный RETURN
-  IF TG_OP = 'DELETE' THEN
-    RETURN OLD;
-  ELSE
-    RETURN NEW;
-  END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- ========================================
--- ТРИГГЕРЫ АУДИТА
--- ========================================
-DROP TRIGGER IF EXISTS habits_audit ON habits;
-CREATE TRIGGER habits_audit
-  AFTER INSERT OR UPDATE OR DELETE ON habits
-  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
-
-DROP TRIGGER IF EXISTS habit_checkins_audit ON habit_checkins;
-CREATE TRIGGER habit_checkins_audit
-  AFTER INSERT OR UPDATE OR DELETE ON habit_checkins
-  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
-
-DROP TRIGGER IF EXISTS tags_audit ON tags;
-CREATE TRIGGER tags_audit
-  AFTER INSERT OR UPDATE OR DELETE ON tags
-  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
-
-DROP TRIGGER IF EXISTS reminders_audit ON reminders;
-CREATE TRIGGER reminders_audit
-  AFTER INSERT OR UPDATE OR DELETE ON reminders
-  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
-
--- ========================================
--- ТРИГГЕР АГРЕГАТОВ (автоматическое обновление habit_stats)
--- ========================================
-CREATE OR REPLACE FUNCTION update_habit_stats() RETURNS TRIGGER AS $$
-DECLARE
-  v_total INTEGER;
-  v_avg_mood NUMERIC;
-  v_last_checkin DATE;
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    -- Вычисляем агрегаты
-    SELECT
-      COUNT(*),
-      AVG(mood_rating),
-      MAX(checkin_date)
-    INTO v_total, v_avg_mood, v_last_checkin
-    FROM habit_checkins
-    WHERE habit_id = NEW.habit_id;
-
-    -- Обновляем habit_stats
-    INSERT INTO habit_stats (habit_id, total_checkins, average_mood, last_checkin_at, updated_at)
-    VALUES (NEW.habit_id, v_total, v_avg_mood, v_last_checkin, NOW())
-    ON CONFLICT (habit_id) DO UPDATE SET
-      total_checkins = v_total,
-      average_mood = v_avg_mood,
-      last_checkin_at = GREATEST(habit_stats.last_checkin_at, v_last_checkin),
-      updated_at = NOW();
-
-  ELSIF TG_OP = 'DELETE' THEN
-    -- Пересчитываем при удалении
-    SELECT
-      COUNT(*),
-      AVG(mood_rating),
-      MAX(checkin_date)
-    INTO v_total, v_avg_mood, v_last_checkin
-    FROM habit_checkins
-    WHERE habit_id = OLD.habit_id;
-
-    UPDATE habit_stats SET
-      total_checkins = v_total,
-      average_mood = v_avg_mood,
-      last_checkin_at = v_last_checkin,
-      updated_at = NOW()
-    WHERE habit_id = OLD.habit_id;
-
-  ELSIF TG_OP = 'UPDATE' THEN
-    -- Пересчитываем при обновлении (если изменился mood_rating)
-    SELECT
-      COUNT(*),
-      AVG(mood_rating),
-      MAX(checkin_date)
-    INTO v_total, v_avg_mood, v_last_checkin
-    FROM habit_checkins
-    WHERE habit_id = NEW.habit_id;
-
-    UPDATE habit_stats SET
-      total_checkins = v_total,
-      average_mood = v_avg_mood,
-      last_checkin_at = v_last_checkin,
-      updated_at = NOW()
-    WHERE habit_id = NEW.habit_id;
-  END IF;
-
-  RETURN COALESCE(NEW, OLD);
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS habit_checkins_update_stats ON habit_checkins;
-CREATE TRIGGER habit_checkins_update_stats
-  AFTER INSERT OR UPDATE OR DELETE ON habit_checkins
-  FOR EACH ROW EXECUTE FUNCTION update_habit_stats();
-\end{lstlisting}
-
-\begin{lstlisting}[caption=SQL-функции]
--- ========================================
--- СКАЛЯРНАЯ ФУНКЦИЯ: расчёт completion rate
--- ========================================
-CREATE OR REPLACE FUNCTION calc_completion_rate(
-  p_user_id UUID,
-  p_from DATE,
-  p_to DATE
-) RETURNS NUMERIC AS $$
-DECLARE
-  v_expected INTEGER;
-  v_actual INTEGER;
-BEGIN
-  -- Ожидаемое кол-во (дни * активные привычки)
-  SELECT COUNT(DISTINCT h.id) * (p_to - p_from + 1)
-  INTO v_expected
-  FROM habits h
-  WHERE h.user_id = p_user_id AND NOT h.is_archived;
-
-  -- Фактическое кол-во checkins
-  SELECT COUNT(*)
-  INTO v_actual
-  FROM habit_checkins hc
-  JOIN habits h ON h.id = hc.habit_id
-  WHERE h.user_id = p_user_id
-    AND hc.checkin_date BETWEEN p_from AND p_to;
-
-  IF v_expected = 0 THEN
-    RETURN 0;
-  END IF;
-
-  RETURN ROUND((v_actual::NUMERIC / v_expected) * 100, 2);
-END;
-$$ LANGUAGE plpgsql;
-
--- ========================================
--- ТАБЛИЧНАЯ ФУНКЦИЯ: отчёт по привычкам
--- ========================================
-CREATE OR REPLACE FUNCTION report_user_habits(
-  p_user_id UUID,
-  p_from DATE,
-  p_to DATE
-) RETURNS TABLE(
-  habit_id UUID,
-  habit_name TEXT,
-  habit_type VARCHAR,
-  total_checkins BIGINT,
-  completion_rate NUMERIC,
-  last_checkin DATE
-) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    h.id,
-    h.name,
-    h.type,
-    COUNT(hc.id) as total_checkins,
-    ROUND(
-      (COUNT(hc.id)::NUMERIC / NULLIF((p_to - p_from + 1), 0)) * 100,
-      2
-    ) as completion_rate,
-    MAX(hc.checkin_date) as last_checkin
-  FROM habits h
-  LEFT JOIN habit_checkins hc ON hc.habit_id = h.id
-    AND hc.checkin_date BETWEEN p_from AND p_to
-  WHERE h.user_id = p_user_id
-  GROUP BY h.id, h.name, h.type
-  ORDER BY total_checkins DESC;
-END;
-$$ LANGUAGE plpgsql;
-\end{lstlisting}
-
-\begin{lstlisting}[caption=SQL-представления]
--- ========================================
--- VIEW 1: Сводка по привычкам пользователя
--- ========================================
-CREATE OR REPLACE VIEW v_user_habit_summary AS
-SELECT
-  u.id as user_id,
-  u.email,
-  u.full_name,
-  COUNT(DISTINCT h.id) as total_habits,
-  COUNT(DISTINCT CASE WHEN h.type = 'good' THEN h.id END) as good_habits,
-  COUNT(DISTINCT CASE WHEN h.type = 'bad' THEN h.id END) as bad_habits,
-  COALESCE(SUM(hs.total_checkins), 0) as total_checkins,
-  MAX(hs.last_checkin_at) as last_activity
-FROM users u
-LEFT JOIN habits h ON h.user_id = u.id AND NOT h.is_archived
-LEFT JOIN habit_stats hs ON hs.habit_id = h.id
-GROUP BY u.id, u.email, u.full_name;
-
--- ========================================
--- VIEW 2: Ежедневная статистика
--- ========================================
-CREATE OR REPLACE VIEW v_daily_completion AS
-SELECT
-  hc.checkin_date,
-  COUNT(*) as total_checkins,
-  COUNT(DISTINCT hc.user_id) as active_users,
-  COUNT(DISTINCT hc.habit_id) as habits_completed,
-  ROUND(AVG(hc.mood_rating), 2) as avg_mood,
-  SUM(hc.duration_minutes) as total_minutes
-FROM habit_checkins hc
-GROUP BY hc.checkin_date
-ORDER BY hc.checkin_date DESC;
-
--- ========================================
--- VIEW 3: Использование тегов
--- ========================================
-CREATE OR REPLACE VIEW v_tag_usage AS
-SELECT
-  t.id as tag_id,
-  t.name as tag_name,
-  t.color,
-  COUNT(ht.habit_id) as usage_count,
-  COUNT(DISTINCT ht.habit_id) as unique_habits,
-  MAX(ht.assigned_at) as last_used
-FROM tags t
-LEFT JOIN habit_tags ht ON ht.tag_id = t.id
-GROUP BY t.id, t.name, t.color
-ORDER BY usage_count DESC;
-\end{lstlisting}
-
-\begin{lstlisting}[caption=SQL-индексы]
--- ========================================
--- ИНДЕКСЫ ДЛЯ ОПТИМИЗАЦИИ ЗАПРОСОВ
--- ========================================
-
--- Habits: фильтрация по пользователю и статусу
-CREATE INDEX IF NOT EXISTS idx_habits_user_id
-  ON habits(user_id)
-  WHERE NOT is_archived;
-
--- HabitCheckins: основные запросы по habit_id и дате
-CREATE INDEX IF NOT EXISTS idx_habit_checkins_habit_date
-  ON habit_checkins(habit_id, checkin_date DESC);
-
--- HabitCheckins: пользовательская история
-CREATE INDEX IF NOT EXISTS idx_habit_checkins_user_date
-  ON habit_checkins(user_id, checkin_date DESC);
-
--- HabitCheckins: глобальная статистика по датам
-CREATE INDEX IF NOT EXISTS idx_habit_checkins_date
-  ON habit_checkins(checkin_date DESC);
-
--- AuditLog: поиск по таблице, операции и времени
-CREATE INDEX IF NOT EXISTS idx_audit_log_table_op_time
-  ON audit_log(table_name, operation, changed_at DESC);
-
--- AuditLog: история действий пользователя
-CREATE INDEX IF NOT EXISTS idx_audit_log_user_time
-  ON audit_log(user_id, changed_at DESC)
-  WHERE user_id IS NOT NULL;
-
--- HabitTags: связи привычка-теги
-CREATE INDEX IF NOT EXISTS idx_habit_tags_habit
-  ON habit_tags(habit_id);
-
--- HabitTags: обратный поиск по тегам
-CREATE INDEX IF NOT EXISTS idx_habit_tags_tag
-  ON habit_tags(tag_id);
-
--- BatchImportJobs: фильтрация по пользователю и статусу
-CREATE INDEX IF NOT EXISTS idx_batch_jobs_user_status
-  ON batch_import_jobs(user_id, status);
-
--- BatchImportErrors: поиск ошибок по job_id
-CREATE INDEX IF NOT EXISTS idx_batch_errors_job
-  ON batch_import_errors(job_id);
-\end{lstlisting}
+В приложении приведены ссылки на основные SQL-скрипты проекта:
+\begin{itemize}
+  \item \texttt{packages/db/sql/001\_triggers.sql} --- триггеры аудита и агрегатов;
+  \item \texttt{packages/db/sql/002\_functions.sql} --- скалярные и табличные функции;
+  \item \texttt{packages/db/sql/003\_views.sql} --- представления для аналитики;
+  \item \texttt{packages/db/sql/004\_indexes.sql} --- индексы для оптимизации запросов.
+\end{itemize}
 
 \newpage
 \section*{ПРИЛОЖЕНИЕ В Swagger документация API}
@@ -774,29 +1007,11 @@ CREATE INDEX IF NOT EXISTS idx_batch_errors_job
 \newpage
 \section*{ПРИЛОЖЕНИЕ Г Результаты EXPLAIN ANALYZE}
 \addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ Г Результаты EXPLAIN ANALYZE}
-\renewcommand{\thelstlisting}{Г.\arabic{lstlisting}}
-\setcounter{lstlisting}{0}
-
-\begin{lstlisting}[caption=Запрос 1 до индексов]
-Execution Time: 145.456 ms
-Seq Scan on habit_checkins hc
-  Rows Removed by Filter: 8658
-\end{lstlisting}
-
-\begin{lstlisting}[caption=Запрос 1 после индексов]
-Execution Time: 2.789 ms
-Index Scan using idx_habit_checkins_user_date on habit_checkins hc
-\end{lstlisting}
-
-\begin{lstlisting}[caption=Запрос 2 до индексов]
-Execution Time: 89.456 ms
-Seq Scan on audit_log al
-  Rows Removed by Filter: 4958
-\end{lstlisting}
-
-\begin{lstlisting}[caption=Запрос 2 после индексов]
-Execution Time: 1.289 ms
-Index Scan using idx_audit_log_user_time on audit_log al
-\end{lstlisting}
+Полные планы выполнения запросов приведены в файле \texttt{docs/perf.md}. Основные результаты оптимизации:
+\begin{itemize}
+  \item история отметок пользователя за период: 145.456 мс \(\rightarrow\) 2.789 мс (52x быстрее);
+  \item журнал аудита за 24 часа: 89.456 мс \(\rightarrow\) 1.289 мс (69x быстрее);
+  \item среднее ускорение ключевых запросов: около 60x.
+\end{itemize}
 
 \end{document}

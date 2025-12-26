@@ -48,9 +48,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Prisma
-**/prisma/migrations/
-
 # Docker
 docker-compose.override.yml
 

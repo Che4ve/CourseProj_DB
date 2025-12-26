@@ -281,7 +281,6 @@
 \texttt{id} & UUID & Первичный ключ. \\ \hline
 \texttt{name} & VARCHAR(100) & Название тега. \\ \hline
 \texttt{slug} & TEXT & URL-friendly имя тега. \\ \hline
-\texttt{color} & VARCHAR(7) & HEX-код цвета. \\ \hline
 \texttt{usage\_count} & INTEGER & Счетчик использований тега. \\ \hline
 \end{tabular}
 \end{table}
@@ -342,7 +341,6 @@
 \texttt{operation} & VARCHAR(10) & Тип операции (INSERT, UPDATE, DELETE). \\ \hline
 \texttt{old\_data} & JSONB & Состояние записи до изменений. \\ \hline
 \texttt{new\_data} & JSONB & Состояние записи после изменений. \\ \hline
-\texttt{ip\_address} & TEXT & IP-адрес инициатора. \\ \hline
 \end{tabular}
 \end{table}
 
@@ -388,7 +386,7 @@
 \begin{itemize}
     \item \textbf{Триггеры:} автоматическое ведение \texttt{audit\_log} и обновление \texttt{habit\_stats} при каждом чекине.
     \item \textbf{Функции:} скалярная \texttt{calc\_completion\_rate} и табличная \texttt{report\_user\_habits} для формирования отчетов.
-    \item \textbf{Представления:} \texttt{v\_daily\_completion} для визуализации активности.
+    \item \textbf{Представления:} \texttt{v\_user\_habit\_summary} для сводной статистики по привычкам пользователя, \texttt{v\_daily\_completion} для визуализации ежедневной активности и \texttt{v\_tag\_usage} для анализа использования тегов.
 \end{itemize}
 
 \subsection{Оптимизация производительности}
@@ -416,7 +414,7 @@
 Реализован механизм Batch Import, позволяющий загружать тысячи записей через JSON/CSV. Система обеспечивает транзакционность: ошибки валидации логируются в \texttt{batch\_import\_errors}, не прерывая загрузку корректных данных.
 
 \subsection{Тестирование}
-Для проверки производительности БД заполнена тестовыми данными с помощью Faker.
+Для проверки производительности БД заполнена тестовыми данными.
 \begin{table}[H]
 \caption{Объем тестовых данных}
 \centering
@@ -435,7 +433,9 @@
 \newpage
 \section*{ЗАКЛЮЧЕНИЕ}
 \addcontentsline{toc}{section}{ЗАКЛЮЧЕНИЕ}
-В ходе проекта разработана информационная система для трекинга привычек. Спроектированная БД обеспечивает надежное хранение и аудит данных. Использование триггеров и функций позволило вынести часть бизнес-логики на сторону СУБД, а индексация обеспечила высокую скорость работы под нагрузкой.
+В ходе проекта разработана информационная система для трекинга привычек. Спроектированная БД обеспечивает надежное хранение и аудит данных. Использование триггеров и функций позволило вынести часть бизнес-логики на сторону СУБД, а индексация обеспечила высокую скорость работы.\\
+
+С целью демонстрации было реализовано веб-приложение с backend на NestJS и frontend на Next.js, включающее REST API с документацией через Swagger. В результате получена система, демонстрирующая достаточно полное применение возможностей PostgreSQL: триггеры, функции, представления, индексы и ограничения целостности.
 
 \newpage
 \addcontentsline{toc}{section}{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
@@ -479,8 +479,7 @@
         full\_name: TEXT \\
         role: VARCHAR(50) \\
         is\_active: BOOLEAN \\
-        created\_at: TIMESTAMPTZ \\
-        login\_count: INT
+        created\_at: TIMESTAMPTZ
     };
 
     \node[table, left=2.0cm of users] (profiles) {
@@ -604,7 +603,6 @@
         \underline{id: UUID} \\
         name: VARCHAR(100) \\
         slug: TEXT \\
-        color: VARCHAR(7) \\
         usage\_count: INT \\
         is\_system: BOOLEAN \\
         created\_at: TIMESTAMPTZ

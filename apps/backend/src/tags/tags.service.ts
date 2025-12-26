@@ -295,6 +295,7 @@ export class TagsService {
 	async attachTagToHabit(tagId: string, habitId: string, userId: string) {
 		const habit = await this.prisma.habit.findFirst({
 			where: { id: habitId, userId },
+			select: { id: true },
 		});
 
 		if (!habit) {
@@ -337,6 +338,7 @@ export class TagsService {
 	async detachTagFromHabit(tagId: string, habitId: string, userId: string) {
 		const habit = await this.prisma.habit.findFirst({
 			where: { id: habitId, userId },
+			select: { id: true },
 		});
 
 		if (!habit) {

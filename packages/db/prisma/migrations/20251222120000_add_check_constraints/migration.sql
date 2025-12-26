@@ -24,3 +24,11 @@ ALTER TABLE "batch_import_jobs"
 ALTER TABLE "_manual_migrations"
   ADD CONSTRAINT "manual_migrations_status_check"
   CHECK ("status" IN ('success', 'failed'));
+
+ALTER TABLE "habit_schedules"
+  ADD CONSTRAINT "habit_schedules_weekdays_mask_check"
+  CHECK ("weekdays_mask" >= 0 AND "weekdays_mask" <= 127);
+
+ALTER TABLE "reminders"
+  ADD CONSTRAINT "reminders_days_of_week_check"
+  CHECK ("days_of_week" >= 0 AND "days_of_week" <= 127);

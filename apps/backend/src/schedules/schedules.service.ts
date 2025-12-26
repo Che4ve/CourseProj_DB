@@ -39,6 +39,7 @@ export class SchedulesService {
   async findByHabit(habitId: string, userId: string) {
     const habit = await this.prisma.habit.findFirst({
       where: { id: habitId, userId },
+      select: { id: true },
     });
 
     if (!habit) {
@@ -56,6 +57,7 @@ export class SchedulesService {
 
     const habit = await this.prisma.habit.findFirst({
       where: { id: dto.habitId, userId },
+      select: { id: true },
     });
 
     if (!habit) {

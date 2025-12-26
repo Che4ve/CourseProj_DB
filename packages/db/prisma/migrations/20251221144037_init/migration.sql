@@ -7,7 +7,6 @@ CREATE TABLE "users" (
     "role" VARCHAR(50) NOT NULL DEFAULT 'user',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "login_count" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -33,7 +32,6 @@ CREATE TABLE "habits" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "type" VARCHAR(10) NOT NULL,
-    "color" VARCHAR(7) NOT NULL DEFAULT '#6366f1',
     "priority" SMALLINT NOT NULL DEFAULT 0,
     "is_archived" BOOLEAN NOT NULL DEFAULT false,
     "display_order" INTEGER NOT NULL DEFAULT 0,
@@ -76,7 +74,6 @@ CREATE TABLE "tags" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" VARCHAR(100) NOT NULL,
     "slug" TEXT NOT NULL,
-    "color" VARCHAR(7) NOT NULL DEFAULT '#gray',
     "usage_count" INTEGER NOT NULL DEFAULT 0,
     "is_system" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -135,7 +132,6 @@ CREATE TABLE "audit_log" (
     "user_id" UUID,
     "old_data" JSONB,
     "new_data" JSONB,
-    "ip_address" VARCHAR(50),
     "changed_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id")

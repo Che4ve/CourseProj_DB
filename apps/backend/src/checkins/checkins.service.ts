@@ -14,6 +14,7 @@ export class CheckinsService {
 		// Проверяем, что привычка принадлежит пользователю
 		const habit = await this.prisma.habit.findFirst({
 			where: { id: dto.habitId, userId },
+			select: { id: true },
 		});
 
 		if (!habit) {
@@ -60,6 +61,7 @@ export class CheckinsService {
 		// Проверяем, что привычка принадлежит пользователю
 		const habit = await this.prisma.habit.findFirst({
 			where: { id: habitId, userId },
+			select: { id: true },
 		});
 
 		if (!habit) {
@@ -99,6 +101,7 @@ export class CheckinsService {
 		// Проверяем, что привычка принадлежит пользователю
 		const habit = await this.prisma.habit.findFirst({
 			where: { id: habitId, userId },
+			select: { id: true },
 		});
 
 		if (!habit) {
@@ -131,6 +134,7 @@ export class CheckinsService {
 	) {
 		const habit = await this.prisma.habit.findFirst({
 			where: { id: habitId, userId },
+			select: { id: true },
 		});
 
 		if (!habit) {
@@ -181,6 +185,7 @@ export class CheckinsService {
 
 		const habit = await this.prisma.habit.findFirst({
 			where: { id: habitId, userId },
+			select: { id: true },
 		});
 
 		if (!habit) {

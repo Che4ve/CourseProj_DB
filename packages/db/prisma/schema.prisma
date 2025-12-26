@@ -110,7 +110,6 @@ model Tag {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String    @unique @db.VarChar(100)
   slug       String    @unique @db.Text
-  color      String    @default("#gray") @db.VarChar(7)
   usageCount Int       @default(0) @map("usage_count")
   isSystem   Boolean   @default(false) @map("is_system")
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
@@ -179,7 +178,6 @@ model AuditLog {
   userId    String?   @map("user_id") @db.Uuid
   oldData   Json?     @map("old_data") @db.JsonB
   newData   Json?     @map("new_data") @db.JsonB
-  ipAddress String?   @map("ip_address") @db.VarChar(50)
   changedAt DateTime  @default(now()) @map("changed_at") @db.Timestamptz
 
   @@index([changedAt(sort: Desc)])

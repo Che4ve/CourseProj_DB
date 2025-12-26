@@ -33,6 +33,7 @@ export class RemindersService {
   async findByHabit(habitId: string, userId: string) {
     const habit = await this.prisma.habit.findFirst({
       where: { id: habitId, userId },
+      select: { id: true },
     });
 
     if (!habit) {
@@ -50,6 +51,7 @@ export class RemindersService {
 
     const habit = await this.prisma.habit.findFirst({
       where: { id: dto.habitId, userId },
+      select: { id: true },
     });
 
     if (!habit) {

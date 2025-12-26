@@ -1,4 +1,5 @@
-import { serverAuthApi } from '@/lib/auth/server-api';
+import { serverAuthApi, ApiError } from '@/lib/auth/server-api';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 import { DashboardTabs } from '@/components/navigation/DashboardTabs';
 import { ProfileNavButton } from '@/components/navigation/ProfileNavButton';
 
@@ -7,7 +8,32 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await serverAuthApi.getMe();
+  let user: Awaited<ReturnType<typeof serverAuthApi.getMe>>;
+
+  try {
+    user = await serverAuthApi.getMe();
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      return (
+        <div className="min-h-screen bg-background">
+          <main className="container mx-auto px-4 py-16">
+            <div className="mx-auto max-w-lg rounded-lg border bg-card p-6 text-center shadow-sm">
+              <h1 className="text-xl font-semibold">Сессия истекла</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Похоже, пользователь больше не существует или токен устарел.
+                Выйдите и войдите снова.
+              </p>
+              <div className="mt-4 flex justify-center">
+                <LogoutButton />
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    throw error;
+  }
 
   return (
     <div className="min-h-screen bg-background">

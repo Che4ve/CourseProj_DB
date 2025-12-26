@@ -39,9 +39,9 @@
 \setlist[itemize]{label=--, leftmargin=1.25cm, itemsep=0pt, topsep=0pt}
 \setlist[enumerate]{label=\arabic*), leftmargin=1.25cm, itemsep=0pt, topsep=0pt}
 
-\titleformat{\section}{\normalfont\Large}{\thesection}{1em}{}
-\titleformat{\subsection}{\normalfont\large}{\thesubsection}{1em}{}
-\titleformat{\subsubsection}{\normalfont\normalsize}{\thesubsubsection}{1em}{}
+\titleformat{\section}{\normalfont\Large\bfseries\centering}{\thesection}{1em}{\MakeUppercase}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
 
 \DeclareCaptionFont{singlespacing}{\setstretch{1}}
 \captionsetup{labelsep=emdash, font=singlespacing}
@@ -130,50 +130,51 @@
 \tableofcontents
 
 \newpage
+\section*{РЕФЕРАТ}
+\addcontentsline{toc}{section}{РЕФЕРАТ}
+Отчет содержит 13 с., 2 рис., 14 табл., 5 источников.
+
+Ключевые слова: БАЗА ДАННЫХ, POSTGRESQL, NESTJS, PRISMA, ТРЕКЕР ПРИВЫЧЕК, АУДИТ, ТРИГГЕРЫ, BATCH IMPORT.
+
+Объектом исследования является информационная система для трекинга привычек пользователей.
+
+Цель работы --- проектирование и реализация полнофункциональной реляционной базы данных, интегрированной с серверным API, обеспечивающей хранение данных о привычках, их выполнение, аналитику и аудит изменений.
+
+В результате работы спроектирована структура БД, реализована бизнес-логика на стороне СУБД (триггеры, функции), разработаны механизмы аудита и аналитической отчетности. Обеспечена высокая производительность через индексацию.
+
+\newpage
 \section*{ВВЕДЕНИЕ}
 \addcontentsline{toc}{section}{ВВЕДЕНИЕ}
-Сервисы трекинга привычек требуют надежного хранения данных, аналитики и контроля изменений. Поэтому важно спроектировать базу данных, которая поддерживает целостность, аудит и быструю выборку. Требования к структуре пояснительной записки определены ГОСТ 7.32-2017 \cite{gost732} и техническим заданием \cite{courseTask}.
+Современные сервисы трекинга привычек требуют надежного хранения данных, гибкой аналитики и строгого контроля изменений. Целью данного курсового проекта является разработка информационной системы с реляционной БД и серверным API, поддерживающими учет привычек и аналитическую обработку данных.
 
-Объект исследования --- информационная система для трекинга привычек пользователей. Предмет исследования --- проектирование и реализация реляционной базы данных и API, обеспечивающих хранение, обработку и анализ данных о привычках.
-
-Цель работы --- разработать информационную систему с реляционной БД и серверным API, поддерживающими учет привычек, отметок выполнения и аналитические отчеты.
-
-Для достижения цели нужно было:
+Для достижения цели решены следующие задачи:
 \begin{enumerate}
-  \item провести анализ предметной области и требований к системе;
-  \item спроектировать структуру БД с необходимыми связями и типами данных;
-  \item реализовать ограничения целостности (PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK, NOT NULL);
-  \item разработать SQL-объекты: триггеры, функции и представления;
-  \item реализовать REST API и механизм batch import;
-  \item оптимизировать запросы индексами и выполнить анализ производительности;
-  \item описать контейнеризацию, развертывание и тестирование.
+  \item Проведен анализ предметной области.
+  \item Спроектирована структура БД.
+  \item Разработаны SQL-объекты: триггеры, ограничения, функции и представления.
+  \item Реализован REST API и механизм массового импорта данных.
+  \item Выполнена оптимизация запросов и анализ производительности.
 \end{enumerate}
-
-Практическая ценность работы --- готовая БД и API для сервиса трекинга привычек. Отчет включает введение, аналитическую, проектную и технологическую части, заключение и приложения.
 
 \newpage
 \section{АНАЛИТИЧЕСКАЯ ЧАСТЬ}
 \subsection{Обзор предметной области}
-Сервис трекинга привычек предназначен для ведения списка привычек, контроля регулярности выполнения и получения аналитических отчетов. Для корректной работы системы требуется хранить учетные записи пользователей, перечни привычек, расписания, отметки выполнения, теги и напоминания, а также агрегированную статистику. Для контроля корректности и отслеживания изменений необходим журнал аудита.
-
-Ключевые сущности предметной области:
-\begin{itemize}
-  \item пользователи и их профили;
-  \item привычки и расписания выполнения;
-  \item отметки выполнения и связанные параметры (настроение, длительность);
-  \item теги и напоминания;
-  \item агрегированная статистика и аудит изменений.
-\end{itemize}
-
-Для предметной области характерны частые транзакционные операции (ежедневные отметки) и аналитические выборки. Это обуславливает необходимость индексирования и оптимизации запросов.
+Предметная область системы --- управление личной эффективностью через трекинг привычек. Основными сущностями являются пользователи, их привычки, расписания выполнения, отметки (чекины) и теги. Система должна поддерживать учет прогресса, напоминания и аудит всех изменений.
 
 \subsection{Постановка задачи}
-В соответствии с техническим заданием \cite{courseTask} система должна содержать не менее 9--10 таблиц со связями 1:1, 1:N и N:M, при этом каждая таблица включает не менее пяти атрибутов различных типов. Требуется реализовать ограничения целостности, каскадные правила, триггеры аудита и агрегатов, SQL-функции (скалярные и табличные), а также не менее трех представлений. Для ключевых запросов необходимо создать индексы и показать ускорение с помощью EXPLAIN ANALYZE. API должно предоставлять CRUD-операции, отчеты, batch import и быть документировано через Swagger.
+В соответствии с техническим заданием необходимо разработать систему, удовлетворяющую требованиям:
+\begin{itemize}
+    \item Хранение данных в 10+ взаимосвязанных таблицах.
+    \item Реализация бизнес-логики на уровне СУБД (триггеры, функции).
+    \item Автоматический аудит всех изменений в ключевых таблицах.
+    \item Обеспечение высокой производительности благодаря индексации.
+    \item Реализация API с поддержкой массового импорта.
+\end{itemize}
 
 \newpage
 \section{ПРОЕКТНАЯ ЧАСТЬ}
 \subsection{Архитектура системы}
-Система реализована как монорепозиторий с разделением на backend, frontend и пакет базы данных. Backend построен на NestJS \cite{nestjs} и взаимодействует с PostgreSQL 16 \cite{postgres} через ORM Prisma \cite{prisma}. Frontend реализован на Next.js \cite{nextjs}. Контейнеризация выполнена с помощью Docker и Docker Compose \cite{docker}. Архитектура взаимодействия компонентов представлена на рисунке \ref{fig:architecture}.
+Система реализована как монорепозиторий. Backend построен на NestJS и взаимодействует с PostgreSQL 16 через Prisma ORM. Frontend реализован на Next.js.
 
 \begin{figure}[H]
 \centering
@@ -188,635 +189,257 @@
 \label{fig:architecture}
 \end{figure}
 
-\subsection{Проектирование структуры базы данных}
-Схема БД включает 13 таблиц и удовлетворяет требованиям по числу сущностей, разнообразию типов данных и наличию связей разных типов. Используются типы данных UUID, TEXT, VARCHAR, CHAR, INTEGER, BIGINT, SMALLINT, NUMERIC, BOOLEAN, DATE, TIME, TIMESTAMPTZ, JSONB и INET. Основные связи:
-\begin{itemize}
-  \item \texttt{users} --- \texttt{user\_profiles} (1:1);
-  \item \texttt{users} --- \texttt{habits} (1:N);
-  \item \texttt{habits} --- \texttt{habit\_checkins} (1:N);
-  \item \texttt{habits} --- \texttt{tags} (N:M через \texttt{habit\_tags});
-  \item \texttt{habits} --- \texttt{habit\_stats} (1:1);
-  \item \texttt{batch\_import\_jobs} --- \texttt{batch\_import\_errors} (1:N).
-\end{itemize}
-
-Логическая схема базы данных с основными сущностями и атрибутами представлена в приложении А (рисунок \ref{fig:db-schema}).
-
-\subsection{Описание таблиц базы данных}
-Ключевые таблицы и их назначение приведены в таблице \ref{tab:db-tables}. Полный перечень содержит 13 таблиц: \texttt{users}, \texttt{user\_profiles}, \texttt{habits}, \texttt{habit\_schedules}, \texttt{habit\_checkins}, \texttt{tags}, \texttt{habit\_tags}, \texttt{reminders}, \texttt{habit\_stats}, \texttt{audit\_log}, \texttt{\_manual\_migrations}, \texttt{batch\_import\_jobs}, \texttt{batch\_import\_errors}.
+\subsection{Проектирование базы данных}
+Схема БД включает в себя следующие таблицы:
 
 \begin{table}[H]
-\caption{Основные таблицы базы данных}
-\label{tab:db-tables}
+\caption{Описание атрибутов таблицы \texttt{users}}
 \centering
-\renewcommand{\arraystretch}{1.2}
 \small
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.4cm} X >{\raggedright\arraybackslash}p{4.0cm}}
-\toprule
-Таблица & Назначение & Ключевые поля \\
-\midrule
-\texttt{users} & учетные записи пользователей & \texttt{id}, \texttt{email} \\
-\texttt{user\_\allowbreak profiles} & профиль пользователя & \texttt{user\_id}, \texttt{timezone} \\
-\texttt{habits} & перечень привычек & \texttt{user\_id}, \texttt{name}, \texttt{type} \\
-\texttt{habit\_\allowbreak schedules} & расписания привычек & \texttt{habit\_id}, \texttt{frequency\_type} \\
-\texttt{habit\_\allowbreak checkins} & отметки выполнения & \texttt{habit\_id}, \texttt{checkin\_date} \\
-\texttt{tags} & справочник тегов & \texttt{name}, \texttt{slug} \\
-\texttt{habit\_\allowbreak tags} & связь привычек и тегов & \texttt{habit\_id}, \texttt{tag\_id} \\
-\texttt{reminders} & напоминания & \texttt{habit\_id}, \texttt{reminder\_time} \\
-\texttt{habit\_\allowbreak stats} & агрегированная статистика & \texttt{habit\_id}, \texttt{total\_checkins} \\
-\texttt{audit\_\allowbreak log} & журнал аудита & \texttt{table\_name}, \texttt{operation} \\
-\texttt{batch\_\allowbreak import\_\allowbreak jobs} & задания импорта & \texttt{entity\_type}, \texttt{status} \\
-\texttt{batch\_\allowbreak import\_\allowbreak errors} & ошибки импорта & \texttt{job\_id}, \texttt{error\_message} \\
-\texttt{\_manual\_\allowbreak migrations} & учет SQL-миграций & \texttt{name}, \texttt{status} \\
-\bottomrule
-\end{tabularx}
-\normalsize
-\end{table}
-
-\setlength{\tabcolsep}{3pt}
-\small
-\subsubsection{Таблица users}
-Назначение: основная таблица пользователей системы.
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY, DEFAULT gen\_random\_uuid() & Уникальный идентификатор \\
-\hline
-email & TEXT & UNIQUE, NOT NULL & Email пользователя \\
-\hline
-password\_hash & TEXT & NOT NULL & Хеш пароля \\
-\hline
-full\_name & TEXT & NOT NULL & Полное имя \\
-\hline
-role & VARCHAR(50) & DEFAULT 'user' & Роль пользователя \\
-\hline
-is\_active & BOOLEAN & DEFAULT true & Активен ли аккаунт \\
-\hline
-created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
-\hline
-login\_count & INTEGER & DEFAULT 0 & Количество входов \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, TEXT, VARCHAR, BOOLEAN, TIMESTAMPTZ, INTEGER.
-
-\subsubsection{Таблица user\_profiles}
-Назначение: дополнительная информация о пользователе (связь 1:1 с users).
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{3.4cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{5.4cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY, DEFAULT gen\_random\_uuid() & Уникальный идентификатор \\
-\hline
-user\_id & UUID & UNIQUE, NOT NULL, FK -> users & Ссылка на пользователя \\
-\hline
-bio & TEXT & NULL & Биография \\
-\hline
-avatar\_url & TEXT & NULL & URL аватара \\
-\hline
-timezone & VARCHAR(100) & DEFAULT 'UTC' & Часовой пояс \\
-\hline
-date\_of\_birth & DATE & NULL & Дата рождения \\
-\hline
-notification\_enabled & BOOLEAN & DEFAULT true & Уведомления включены \\
-\hline
-theme\_preference & SMALLINT & DEFAULT 0, CHECK (0--2) & Тема оформления \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, TEXT, VARCHAR, DATE, BOOLEAN, SMALLINT.
-
-\subsubsection{Таблица habits}
-Назначение: привычки пользователей (хорошие и плохие).
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY, DEFAULT gen\_random\_uuid() & Уникальный идентификатор \\
-\hline
-user\_id & UUID & NOT NULL, FK -> users & Владелец привычки \\
-\hline
-name & TEXT & NOT NULL & Название привычки \\
-\hline
-description & TEXT & NULL & Описание \\
-\hline
-type & VARCHAR(10) & NOT NULL, CHECK IN ('good', 'bad') & Тип привычки \\
-\hline
-priority & SMALLINT & DEFAULT 0, CHECK (0--10) & Приоритет \\
-\hline
-is\_archived & BOOLEAN & DEFAULT false & Архивирована \\
-\hline
-display\_order & INTEGER & DEFAULT 0 & Порядок отображения \\
-\hline
-created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, TEXT, VARCHAR, SMALLINT, BOOLEAN, INTEGER, TIMESTAMPTZ.
-
-\subsubsection{Таблица habit\_schedules}
-Назначение: расписания для привычек (ежедневные, еженедельные и т.д.).
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{5.4cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-habit\_id & UUID & NOT NULL, FK -> habits & Ссылка на привычку \\
-\hline
-frequency\_type & VARCHAR(20) & CHECK IN (...) & Тип частоты \\
-\hline
-frequency\_value & INTEGER & DEFAULT 1, CHECK > 0 & Значение частоты \\
-\hline
-weekdays\_mask & SMALLINT & DEFAULT 127 & Битовая маска дней недели \\
-\hline
-start\_date & DATE & NOT NULL & Дата начала \\
-\hline
-end\_date & DATE & NULL & Дата окончания \\
-\hline
-is\_active & BOOLEAN & DEFAULT true & Активно \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, VARCHAR, INTEGER, SMALLINT, DATE, BOOLEAN.
-
-\subsubsection{Таблица habit\_checkins}
-Назначение: отметки выполнения привычек (транзакционная таблица).
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-habit\_id & UUID & NOT NULL, FK -> habits & Ссылка на привычку \\
-\hline
-user\_id & UUID & NOT NULL, FK -> users & Ссылка на пользователя \\
-\hline
-checkin\_date & DATE & NOT NULL & Дата отметки \\
-\hline
-checkin\_time & TIME & DEFAULT CURRENT\_TIME & Время отметки \\
-\hline
-notes & TEXT & NULL & Заметки \\
-\hline
-mood\_rating & SMALLINT & CHECK (1--5) & Оценка настроения \\
-\hline
-duration\_minutes & INTEGER & NULL & Длительность в минутах \\
-\hline
-created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, DATE, TIME, TEXT, SMALLINT, INTEGER, TIMESTAMPTZ. UNIQUE: (habit\_id, checkin\_date).
-
-\subsubsection{Таблица tags}
-Назначение: теги для категоризации привычек.
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-name & VARCHAR(100) & UNIQUE, NOT NULL & Название тега \\
-\hline
-slug & TEXT & UNIQUE, NOT NULL & URL-friendly имя \\
-\hline
-color & VARCHAR(7) & DEFAULT '\#gray' & Цвет \\
-\hline
-usage\_count & INTEGER & DEFAULT 0 & Счётчик использований \\
-\hline
-is\_system & BOOLEAN & DEFAULT false & Системный тег \\
-\hline
-created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, VARCHAR, TEXT, INTEGER, BOOLEAN, TIMESTAMPTZ.
-
-\subsubsection{Таблица habit\_tags}
-Назначение: связь N:M между привычками и тегами.
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-habit\_id & UUID & NOT NULL, FK -> habits & Ссылка на привычку \\
-\hline
-tag\_id & UUID & NOT NULL, FK -> tags & Ссылка на тег \\
-\hline
-priority & SMALLINT & DEFAULT 0 & Приоритет \\
-\hline
-is\_primary & BOOLEAN & DEFAULT false & Основной тег \\
-\hline
-assigned\_by & VARCHAR(50) & DEFAULT 'user' & Кто назначил \\
-\hline
-assigned\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата назначения \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, SMALLINT, BOOLEAN, VARCHAR, TIMESTAMPTZ. UNIQUE: (habit\_id, tag\_id).
-
-\subsubsection{Таблица reminders}
-Назначение: напоминания для привычек.
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{5.4cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-habit\_id & UUID & NOT NULL, FK -> habits & Ссылка на привычку \\
-\hline
-reminder\_time & TIME & NOT NULL & Время напоминания \\
-\hline
-days\_of\_week & SMALLINT & DEFAULT 127 & Дни недели (битовая маска) \\
-\hline
-notification\_text & TEXT & NULL & Текст уведомления \\
-\hline
-delivery\_method & VARCHAR(20) & DEFAULT 'push', CHECK IN (...) & Метод доставки \\
-\hline
-is\_active & BOOLEAN & DEFAULT true & Активно \\
-\hline
-created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, TIME, SMALLINT, TEXT, VARCHAR, BOOLEAN, TIMESTAMPTZ.
-
-\subsubsection{Таблица habit\_stats}
-Назначение: агрегированная статистика по привычкам (обновляется триггером).
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-habit\_id & UUID & UNIQUE, NOT NULL, FK -> habits & Ссылка на привычку \\
-\hline
-total\_checkins & INTEGER & DEFAULT 0 & Всего отметок \\
-\hline
-current\_streak & INTEGER & DEFAULT 0 & Текущая серия \\
-\hline
-longest\_streak & INTEGER & DEFAULT 0 & Лучшая серия \\
-\hline
-completion\_rate & NUMERIC(5,2) & DEFAULT 0.00 & Процент выполнения \\
-\hline
-average\_mood & NUMERIC(3,2) & NULL & Средняя оценка настроения \\
-\hline
-last\_checkin\_at & DATE & NULL & Последняя отметка \\
-\hline
-updated\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата обновления \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, INTEGER, NUMERIC, DATE, TIMESTAMPTZ.
-
-\subsubsection{Таблица audit\_log}
-Назначение: журнал аудита изменений.
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-table\_name & VARCHAR(100) & NOT NULL & Название таблицы \\
-\hline
-operation & VARCHAR(10) & NOT NULL, CHECK IN (...) & Тип операции \\
-\hline
-record\_id & UUID & NULL & ID изменённой записи \\
-\hline
-user\_id & UUID & NULL & ID пользователя \\
-\hline
-old\_data & JSONB & NULL & Старые данные \\
-\hline
-new\_data & JSONB & NULL & Новые данные \\
-\hline
-ip\_address & INET & NULL & IP-адрес \\
-\hline
-changed\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата изменения \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, VARCHAR, JSONB, INET, TIMESTAMPTZ.
-
-\subsubsection{Таблица \_manual\_migrations}
-Назначение: контроль применения SQL-миграций (триггеров, функций, представлений и индексов).
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{5.2cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-name & VARCHAR(255) & UNIQUE, NOT NULL & Название миграции \\
-\hline
-checksum & CHAR(64) & NULL & SHA-256 hash \\
-\hline
-applied\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата применения \\
-\hline
-execution\_time\_ms & INTEGER & NULL & Время выполнения \\
-\hline
-status & VARCHAR(20) & DEFAULT 'success', CHECK IN (...) & Статус \\
-\hline
-applied\_by & TEXT & NULL & Кто применил \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, VARCHAR, CHAR, TIMESTAMPTZ, INTEGER, TEXT.
-
-\subsubsection{Таблица batch\_import\_jobs}
-Назначение: задачи батчевого импорта данных.
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-user\_id & UUID & FK -> users, ON DELETE SET NULL & Пользователь \\
-\hline
-entity\_type & VARCHAR(50) & NOT NULL & Тип сущности \\
-\hline
-status & VARCHAR(20) & CHECK IN (...) & Статус \\
-\hline
-total\_records & INTEGER & DEFAULT 0 & Всего записей \\
-\hline
-success\_count & INTEGER & DEFAULT 0 & Успешных \\
-\hline
-error\_count & INTEGER & DEFAULT 0 & Ошибок \\
-\hline
-progress\_percent & NUMERIC(5,2) & DEFAULT 0.00 & Прогресс \\
-\hline
-file\_size\_bytes & BIGINT & NULL & Размер файла \\
-\hline
-started\_at & TIMESTAMPTZ & DEFAULT NOW() & Время начала \\
-\hline
-completed\_at & TIMESTAMPTZ & NULL & Время завершения \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, VARCHAR, INTEGER, NUMERIC, BIGINT, TIMESTAMPTZ.
-
-\subsubsection{Таблица batch\_import\_errors}
-Назначение: ошибки батчевого импорта.
-
-\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{4.1cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Колонка} & \textbf{Тип} & \textbf{Ограничения} & \textbf{Описание} \\
-\hline
-\endhead
-\hline
-\endfoot
-\hline
-\endlastfoot
-id & UUID & PRIMARY KEY & Уникальный идентификатор \\
-\hline
-job\_id & UUID & NOT NULL, FK -> batch\_import\_jobs & Ссылка на задачу \\
-\hline
-row\_number & INTEGER & NULL & Номер строки \\
-\hline
-record\_data & JSONB & NOT NULL & Данные записи \\
-\hline
-error\_message & TEXT & NOT NULL & Сообщение об ошибке \\
-\hline
-error\_code & VARCHAR(50) & NULL & Код ошибки \\
-\hline
-created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
-\hline
-\end{longtable}
-
-Уникальные типы: UUID, INTEGER, JSONB, TEXT, VARCHAR, TIMESTAMPTZ.
-
-\normalsize
-\setlength{\tabcolsep}{6pt}
-\subsection{Ограничения целостности данных}
-Для обеспечения целостности реализованы следующие типы ограничений: PRIMARY KEY на поле \texttt{id} во всех таблицах, FOREIGN KEY с каскадным удалением или установкой \texttt{NULL}, UNIQUE для уникальных атрибутов, CHECK для доменных ограничений и NOT NULL для обязательных полей. Примеры:
-\begin{itemize}
-  \item PRIMARY KEY: \texttt{id UUID PRIMARY KEY DEFAULT gen\_random\_uuid()};
-  \item FOREIGN KEY: \texttt{habits.user\_id -> users.id ON DELETE CASCADE};
-  \item UNIQUE: \texttt{habit\_checkins(habit\_id, checkin\_date)};
-  \item CHECK: \texttt{habits.type IN ('good', 'bad')}, \texttt{habit\_checkins.mood\_rating BETWEEN 1 AND 5};
-  \item NOT NULL: \texttt{users.email}, \texttt{habits.name}, \texttt{habits.type}.
-\end{itemize}
-
-\subsection{Реализация SQL-функциональности}
-Базовые CRUD-операции реализованы через Prisma ORM, а сложные выборки и отчеты --- через параметризованные SQL-запросы. Реализованы триггеры аудита и автоматического обновления агрегированной статистики, скалярная функция \texttt{calc\_completion\_rate} и табличная функция \texttt{report\_user\_habits}. Основные SQL-скрипты:
-\begin{itemize}
-  \item \texttt{packages/db/sql/001\_triggers.sql} --- триггеры аудита и агрегатов;
-  \item \texttt{packages/db/sql/002\_functions.sql} --- функции;
-  \item \texttt{packages/db/sql/003\_views.sql} --- представления;
-  \item \texttt{packages/db/sql/004\_indexes.sql} --- индексы.
-\end{itemize}
-
-\subsection{Описание API и взаимодействия с БД}
-Backend предоставляет REST API с документацией в Swagger. Основные группы эндпойнтов:
-\begin{itemize}
-  \item аутентификация: \texttt{/auth/register}, \texttt{/auth/login}, \texttt{/auth/me};
-  \item управление привычками: \texttt{/habits} (GET, POST), \texttt{/habits/:id} (GET, PUT, DELETE);
-  \item отметки выполнения: \texttt{/checkins} (GET, POST), \texttt{/checkins/:id} (DELETE);
-  \item отчеты: \texttt{/reports/user/:userId}, \texttt{/reports/completion-rate/:userId};
-  \item массовая загрузка: \texttt{/batch-import} и \texttt{/batch-import/:jobId}.
-\end{itemize}
-
-Безопасность обеспечивается JWT-аутентификацией, хешированием паролей (bcrypt) и параметризованными запросами к БД. SQL-инъекции исключаются благодаря использованию ORM и параметризации.
-
-\newpage
-\subsection{Примеры SQL-запросов и анализ производительности}
-Примеры типовых запросов приведены в листинге \ref{lst:sample-queries}.
-
-\begin{lstlisting}[caption=Примеры SQL-запросов, label=lst:sample-queries]
-SELECT * FROM habits
-WHERE user_id = $1 AND NOT is_archived
-ORDER BY display_order;
-
-SELECT * FROM report_user_habits($1, $2, $3);
-
-SELECT * FROM v_user_habit_summary
-WHERE user_id = $1;
-\end{lstlisting}
-
-Для повышения производительности созданы индексы на полях, используемых в фильтрации и сортировке. В таблице \ref{tab:perf} приведено сравнение времени выполнения запросов до и после индексирования. Полные планы EXPLAIN ANALYZE приведены в файле \texttt{docs/perf.md}. Основные результаты: 52x быстрее для истории отметок и 69x быстрее для журнала аудита, среднее ускорение около 60x.
-
-\begin{table}[H]
-\caption{Сравнение производительности запросов}
-\label{tab:perf}
-\centering
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{p{6.5cm} p{2.5cm} p{2.5cm} p{2.5cm}}
-\toprule
-Запрос & До, мс & После, мс & Ускорение \\
-\midrule
-История отметок пользователя за 30 дней & 145.456 & 2.789 & 52x \\
-Журнал аудита за 24 часа & 89.456 & 1.289 & 69x \\
-\bottomrule
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{email} & TEXT & Уникальный email пользователя. \\ \hline
+\texttt{password\_hash} & TEXT & Хеш пароля. \\ \hline
+\texttt{full\_name} & TEXT & Полное имя. \\ \hline
+\texttt{role} & VARCHAR(50) & Роль пользователя (user, admin). \\ \hline
+\texttt{is\_active} & BOOLEAN & Статус активности аккаунта. \\ \hline
 \end{tabular}
 \end{table}
 
-Ключевые индексы: \texttt{idx\_habits\_user\_id}, \texttt{idx\_habit\_checkins\_user\_date}, \texttt{idx\_audit\_log\_user\_time} и др.
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{user\_profiles}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{user\_id} & UUID & Внешний ключ к \texttt{users}. \\ \hline
+\texttt{bio} & TEXT & О себе. \\ \hline
+\texttt{timezone} & VARCHAR(100) & Часовой пояс пользователя. \\ \hline
+\texttt{date\_of\_birth} & DATE & Дата рождения. \\ \hline
+\texttt{theme\_preference} & SMALLINT & Предпочтения темы оформления. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{habits}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{user\_id} & UUID & Владелец привычки. \\ \hline
+\texttt{name} & TEXT & Название привычки. \\ \hline
+\texttt{type} & VARCHAR(10) & Тип: 'good' или 'bad'. \\ \hline
+\texttt{priority} & SMALLINT & Приоритет выполнения (0-10). \\ \hline
+\texttt{is\_archived} & BOOLEAN & Флаг архивной привычки. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{habit\_schedules}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{habit\_id} & UUID & Внешний ключ к \texttt{habits}. \\ \hline
+\texttt{frequency\_type} & VARCHAR(20) & Тип частоты (daily, weekly). \\ \hline
+\texttt{weekdays\_mask} & SMALLINT & Битовая маска дней недели. \\ \hline
+\texttt{start\_date} & DATE & Дата начала действия расписания. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{habit\_checkins}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{habit\_id} & UUID & Внешний ключ к \texttt{habits}. \\ \hline
+\texttt{checkin\_date} & DATE & Дата выполнения привычки. \\ \hline
+\texttt{checkin\_time} & TIME & Время выполнения. \\ \hline
+\texttt{mood\_rating} & SMALLINT & Оценка настроения (1-5). \\ \hline
+\texttt{notes} & TEXT & Заметки к выполнению. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{tags}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{name} & VARCHAR(100) & Название тега. \\ \hline
+\texttt{slug} & TEXT & URL-friendly имя тега. \\ \hline
+\texttt{color} & VARCHAR(7) & HEX-код цвета. \\ \hline
+\texttt{usage\_count} & INTEGER & Счетчик использований тега. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{habit\_tags}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{habit\_id} & UUID & Ссылка на привычку. \\ \hline
+\texttt{tag\_id} & UUID & Ссылка на тег. \\ \hline
+\texttt{is\_primary} & BOOLEAN & Флаг основного тега. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{reminders}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{habit\_id} & UUID & Ссылка на привычку. \\ \hline
+\texttt{reminder\_time} & TIME & Время напоминания. \\ \hline
+\texttt{days\_of\_week} & SMALLINT & Маска дней недели для напоминания. \\ \hline
+\texttt{is\_active} & BOOLEAN & Статус активности напоминания. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{habit\_stats}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{habit\_id} & UUID & Ссылка на привычку. \\ \hline
+\texttt{total\_checkins} & INTEGER & Всего выполнений. \\ \hline
+\texttt{current\_streak} & INTEGER & Текущая серия (дней подряд). \\ \hline
+\texttt{longest\_streak} & INTEGER & Рекордная серия. \\ \hline
+\texttt{completion\_rate} & NUMERIC & Процент выполнения. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{audit\_log}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ. \\ \hline
+\texttt{table\_name} & TEXT & Имя затронутой таблицы. \\ \hline
+\texttt{operation} & VARCHAR(10) & Тип операции (INSERT, UPDATE, DELETE). \\ \hline
+\texttt{old\_data} & JSONB & Состояние записи до изменений. \\ \hline
+\texttt{new\_data} & JSONB & Состояние записи после изменений. \\ \hline
+\texttt{ip\_address} & TEXT & IP-адрес инициатора. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{batch\_import\_jobs}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ задачи. \\ \hline
+\texttt{status} & VARCHAR & Статус (pending, processing, completed). \\ \hline
+\texttt{total\_records} & INTEGER & Всего записей в батче. \\ \hline
+\texttt{success\_count} & INTEGER & Успешно импортировано. \\ \hline
+\texttt{error\_count} & INTEGER & Количество ошибок. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Описание атрибутов таблицы \texttt{batch\_import\_errors}}
+\centering
+\small
+\begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+\hline
+\textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+\texttt{id} & UUID & Первичный ключ ошибки. \\ \hline
+\texttt{job\_id} & UUID & Ссылка на задачу импорта. \\ \hline
+\texttt{row\_number} & INTEGER & Номер строки с ошибкой. \\ \hline
+\texttt{error\_message} & TEXT & Текст ошибки. \\ \hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Ограничения целостности и бизнес-логика}
+Для обеспечения корректности данных применены:
+\begin{itemize}
+    \item \texttt{FOREIGN KEY} с правилами \texttt{ON DELETE CASCADE}.
+    \item \texttt{CHECK} ограничения на тип привычки, рейтинг настроения (1-5) и приоритет.
+    \item \texttt{UNIQUE} индекс на пару \texttt{(habit\_id, checkin\_date)}.
+\end{itemize}
+
+Бизнес-логика реализована через:
+\begin{itemize}
+    \item \textbf{Триггеры:} автоматическое ведение \texttt{audit\_log} и обновление \texttt{habit\_stats} при каждом чекине.
+    \item \textbf{Функции:} скалярная \texttt{calc\_completion\_rate} и табличная \texttt{report\_user\_habits} для формирования отчетов.
+    \item \textbf{Представления:} \texttt{v\_daily\_completion} для визуализации активности.
+\end{itemize}
+
+\subsection{Оптимизация производительности}
+Для ускорения работы созданы B-tree индексы на некоторых полях. Результаты анализа через \texttt{EXPLAIN ANALYZE} представлены в таблице \ref{tab:perf}.
+
+\begin{table}[H]
+\caption{Результаты оптимизации запросов}
+\label{tab:perf}
+\centering
+\begin{tabular}{l c c c}
+\toprule
+Запрос & До, мс & После, мс & Ускорение \\
+\midrule
+Фильтрация привычек по пользователю & 1.463 & 0.049 & $\approx$ 30x \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \newpage
 \section{ТЕХНОЛОГИЧЕСКАЯ ЧАСТЬ}
 \subsection{Контейнеризация и развертывание}
-Развертывание системы выполняется с помощью Docker Compose. Используются три сервиса: база данных PostgreSQL, backend и frontend. Конфигурация размещена в файле \texttt{docker-compose.yml} и описывает порты, переменные окружения и зависимости сервисов.
+Развертывание системы выполняется через Docker Compose. Стек включает PostgreSQL 16, NestJS Backend и Next.js Frontend.
 
-После запуска контейнеров выполняются миграции и применение SQL-скриптов: \texttt{pnpm db:migrate}, \texttt{pnpm db:sql}, \texttt{pnpm db:seed}. Swagger доступен по адресу \texttt{http://localhost:3001/api/docs}.
+\subsection{Массовая загрузка данных}
+Реализован механизм Batch Import, позволяющий загружать тысячи записей через JSON/CSV. Система обеспечивает транзакционность: ошибки валидации логируются в \texttt{batch\_import\_errors}, не прерывая загрузку корректных данных.
 
-\subsection{Тестирование системы}
-Для проверки работоспособности используются тестовые данные и контрольные запросы. Скрипт заполнения БД формирует реалистичный набор данных, что позволяет проверить триггеры, функции и производительность.
-
+\subsection{Тестирование}
+Для проверки производительности БД заполнена тестовыми данными с помощью Faker.
 \begin{table}[H]
-\caption{Объем тестовых данных после заполнения}
-\label{tab:seed-data}
+\caption{Объем тестовых данных}
 \centering
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{p{7cm} r}
+\begin{tabular}{l r}
 \toprule
-Таблица & Количество записей \\
+Сущность & Количество записей \\
 \midrule
-\texttt{users} & 100 \\
-\texttt{habits} & 800 \\
-\texttt{habit\_checkins} & 10000 \\
-\texttt{tags} & 50 \\
-\texttt{habit\_tags} & 1500 \\
-\texttt{reminders} & 600 \\
+Пользователи & 100 \\
+Привычки & 800 \\
+Отметки выполнения & 10 000 \\
+Теги и связи & 1 500 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Примеры проверочных запросов включают выборку последних записей аудита, расчет \texttt{calc\_completion\_rate} за период и получение ежедневной статистики из представления \texttt{v\_daily\_completion}.
-
 \newpage
 \section*{ЗАКЛЮЧЕНИЕ}
 \addcontentsline{toc}{section}{ЗАКЛЮЧЕНИЕ}
-В проекте разработана информационная система для трекинга привычек. Реализована реляционная БД из 13 таблиц со связями 1:1, 1:N и N:M, ограничениями целостности, триггерами аудита и агрегатов, функциями и представлениями. Реализован REST API и batch import. Оптимизация запросов индексами дала ускорение в десятки раз.
-
-Задачи выполнены. Система корректно работает и может развиваться дальше за счет расширения аналитики и функциональности.
+В ходе проекта разработана информационная система для трекинга привычек. Спроектированная БД обеспечивает надежное хранение и аудит данных. Использование триггеров и функций позволило вынести часть бизнес-логики на сторону СУБД, а индексация обеспечила высокую скорость работы под нагрузкой.
 
 \newpage
-\section*{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
 \addcontentsline{toc}{section}{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
-\begin{thebibliography}{7}
+\begin{thebibliography}{5}
   \bibitem{postgres} PostgreSQL 16 Documentation [Электронный ресурс]. --- URL: \url{https://www.postgresql.org/docs/16/}.
   \bibitem{nestjs} NestJS Documentation [Электронный ресурс]. --- URL: \url{https://docs.nestjs.com/}.
   \bibitem{prisma} Prisma Documentation [Электронный ресурс]. --- URL: \url{https://www.prisma.io/docs}.
@@ -834,145 +457,211 @@ WHERE user_id = $1;
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
-    node distance=2.0cm and 2.6cm,
+    node distance=1.5cm,
     table/.style={
         rectangle split, rectangle split parts=2,
-        draw, fill=gray!5, rounded corners,
-        minimum width=3.2cm, font=\scriptsize\ttfamily,
-        align=left
+        draw, fill=white, rounded corners,
+        minimum width=2.5cm, font=\tiny\ttfamily,
+        align=left, drop shadow
     },
-    edge/.style={->, >=Latex, thick},
-    rel/.style={midway, fill=white, inner sep=1pt, font=\scriptsize}
+    edge/.style={->, >=Latex, thick, gray!60},
+    rel/.style={midway, fill=white, inner sep=1pt, font=\tiny\sffamily, text=black}
 ]
-    \node[table] (profiles) {
-        user\_profiles
-        \nodepart{second}
-        \underline{id: UUID} \\
-        user\_id: UUID (FK) \\
-        bio: TEXT \\
-        timezone: VARCHAR
-    };
 
-    \node[table, right=of profiles] (users) {
-        users
+    % --- ROW 1: CORE USERS & SYSTEM ---
+    
+    \node[table] (users) {
+        \nodepart{one} \textbf{users}
         \nodepart{second}
         \underline{id: UUID} \\
         email: TEXT \\
         password\_hash: TEXT \\
-        role: VARCHAR
+        full\_name: TEXT \\
+        role: VARCHAR(50) \\
+        is\_active: BOOLEAN \\
+        created\_at: TIMESTAMPTZ \\
+        login\_count: INT
     };
 
-    \node[table, right=of users] (habits) {
-        habits
+    \node[table, left=2.0cm of users] (profiles) {
+        \nodepart{one} \textbf{user\_profiles}
+        \nodepart{second}
+        \underline{id: UUID} \\
+        user\_id: UUID (FK) \\
+        bio: TEXT \\
+        avatar\_url: TEXT \\
+        timezone: VARCHAR(100) \\
+        date\_of\_birth: DATE \\
+        theme\_preference: SMALLINT \\
+        notification\_enabled: BOOL
+    };
+
+    \node[table, right=1.5cm of users] (batch_jobs) {
+        \nodepart{one} \textbf{batch\_import\_jobs}
+        \nodepart{second}
+        \underline{id: UUID} \\
+        user\_id: UUID (FK) \\
+        entity\_type: VARCHAR \\
+        status: VARCHAR \\
+        total\_records: INT \\
+        success\_count: INT \\
+        error\_count: INT \\
+        progress\_percent: DECIMAL \\
+        started\_at: TIMESTAMPTZ \\
+        completed\_at: TIMESTAMPTZ
+    };
+
+    % --- ROW 2: AUDIT & BATCH DETAILS ---
+    
+    \node[table, below=1.0cm of users] (audit) {
+        \nodepart{one} \textbf{audit\_log}
+        \nodepart{second}
+        \underline{id: UUID} \\
+        table\_name: TEXT \\
+        operation: VARCHAR \\
+        record\_id: UUID \\
+        user\_id: UUID \\
+        old\_data: JSONB \\
+        new\_data: JSONB \\
+        ip\_address: VARCHAR \\
+        changed\_at: TIMESTAMPTZ
+    };
+
+    \node[table, below=1.0cm of batch_jobs] (batch_errors) {
+        \nodepart{one} \textbf{batch\_import\_errors}
+        \nodepart{second}
+        \underline{id: UUID} \\
+        job\_id: UUID (FK) \\
+        row\_number: INT \\
+        record\_data: JSONB \\
+        error\_message: TEXT \\
+        error\_code: VARCHAR \\
+        created\_at: TIMESTAMPTZ
+    };
+
+    % --- ROW 3: HABITS CORE (Balanced spacing) ---
+
+    \node[table, below=1.0cm of profiles] (checkins) {
+        \nodepart{one} \textbf{habit\_checkins}
+        \nodepart{second}
+        \underline{id: UUID} \\
+        habit\_id: UUID (FK) \\
+        user\_id: UUID (FK) \\
+        checkin\_date: DATE \\
+        checkin\_time: TIME \\
+        mood\_rating: SMALLINT \\
+        duration\_minutes: INT \\
+        notes: TEXT \\
+        created\_at: TIMESTAMPTZ
+    };
+    
+    \node[table, below=1.0cm of checkins] (habits) {
+        \nodepart{one} \textbf{habits}
         \nodepart{second}
         \underline{id: UUID} \\
         user\_id: UUID (FK) \\
         name: TEXT \\
-        type: VARCHAR
+        description: TEXT \\
+        type: VARCHAR(10) \\
+        priority: SMALLINT \\
+        is\_archived: BOOLEAN \\
+        display\_order: INT \\
+        created\_at: TIMESTAMPTZ
     };
 
-    \node[table, right=of habits] (tags) {
-        tags
-        \nodepart{second}
-        \underline{id: UUID} \\
-        name: VARCHAR \\
-        slug: TEXT \\
-        color: VARCHAR
-    };
-
-    \node[table, below=of users] (checkins) {
-        habit\_checkins
-        \nodepart{second}
-        \underline{id: UUID} \\
-        habit\_id: UUID (FK) \\
-        user\_id: UUID (FK) \\
-        checkin\_date: DATE
-    };
-
-    \node[table, below=of habits] (schedules) {
-        habit\_schedules
-        \nodepart{second}
-        \underline{id: UUID} \\
-        habit\_id: UUID (FK) \\
-        frequency\_type: VARCHAR \\
-        start\_date: DATE
-    };
-
-    \node[table, below=of tags] (habit_tags) {
-        habit\_tags
+    \node[table, below=1.0cm of audit] (habit_tags) {
+        \nodepart{one} \textbf{habit\_tags}
         \nodepart{second}
         \underline{id: UUID} \\
         habit\_id: UUID (FK) \\
         tag\_id: UUID (FK) \\
+        priority: SMALLINT \\
+        is\_primary: BOOLEAN \\
+        assigned\_by: VARCHAR(50) \\
         assigned\_at: TIMESTAMPTZ
     };
+    
+    % --- ROW 4: HABIT DETAILS & EXTENSIONS ---
 
-    \node[table, below=of profiles] (audit) {
-        audit\_log
-        \nodepart{second}
-        \underline{id: UUID} \\
-        table\_name: VARCHAR \\
-        operation: VARCHAR \\
-        changed\_at: TIMESTAMPTZ
-    };
 
-    \node[table, below=of checkins] (stats) {
-        habit\_stats
+
+    \node[table, below=1.5cm of habit_tags] (schedules) {
+        \nodepart{one} \textbf{habit\_schedules}
         \nodepart{second}
         \underline{id: UUID} \\
         habit\_id: UUID (FK) \\
-        total\_checkins: INTEGER \\
-        updated\_at: TIMESTAMPTZ
+        frequency\_type: VARCHAR \\
+        frequency\_value: INT \\
+        weekdays\_mask: SMALLINT \\
+        start\_date: DATE \\
+        end\_date: DATE \\
+        is\_active: BOOLEAN
+    };
+    
+    \node[table, right=1.5cm of habit_tags] (tags) {
+        \nodepart{one} \textbf{tags}
+        \nodepart{second}
+        \underline{id: UUID} \\
+        name: VARCHAR(100) \\
+        slug: TEXT \\
+        color: VARCHAR(7) \\
+        usage\_count: INT \\
+        is\_system: BOOLEAN \\
+        created\_at: TIMESTAMPTZ
     };
 
-    \node[table, below=of schedules] (reminders) {
-        reminders
+    \node[table, below=1.0cm of habits] (reminders) {
+        \nodepart{one} \textbf{reminders}
         \nodepart{second}
         \underline{id: UUID} \\
         habit\_id: UUID (FK) \\
         reminder\_time: TIME \\
-        is\_active: BOOLEAN
-    };
-
-    \node[table, below=of audit] (batch_jobs) {
-        batch\_import\_jobs
-        \nodepart{second}
-        \underline{id: UUID} \\
-        user\_id: UUID (FK) \\
-        status: VARCHAR \\
-        started\_at: TIMESTAMPTZ
-    };
-
-    \node[table, below=of batch_jobs] (batch_errors) {
-        batch\_import\_errors
-        \nodepart{second}
-        \underline{id: UUID} \\
-        job\_id: UUID (FK) \\
-        error\_message: TEXT \\
+        days\_of\_week: SMALLINT \\
+        notification\_text: TEXT \\
+        delivery\_method: VARCHAR \\
+        is\_active: BOOLEAN \\
         created\_at: TIMESTAMPTZ
     };
 
-    \node[table, below=of habit_tags] (manual) {
-        \_manual\_migrations
+    \node[table, below=1.5cm of tags] (stats) {
+        \nodepart{one} \textbf{habit\_stats}
         \nodepart{second}
         \underline{id: UUID} \\
-        name: VARCHAR \\
-        status: VARCHAR \\
-        applied\_at: TIMESTAMPTZ
+        habit\_id: UUID (FK) \\
+        total\_checkins: INT \\
+        current\_streak: INT \\
+        longest\_streak: INT \\
+        completion\_rate: DECIMAL \\
+        average\_mood: DECIMAL \\
+        last\_checkin\_at: DATE \\
+        updated\_at: TIMESTAMPTZ
     };
 
-    \draw[edge] (users) -- node[rel, above, yshift=2pt] {1:1} (profiles);
-    \draw[edge] (users) -- node[rel, above, yshift=2pt] {1:N} (habits);
-    \draw[edge] (users) -- node[rel, left, xshift=-6pt] {1:N} (checkins);
-    \draw[edge] (users) -- node[rel, left, xshift=-6pt] {1:N} (batch_jobs);
-    \draw[edge] (users) -- node[rel, left, xshift=-6pt] {1:N} (audit);
-    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:N} (checkins);
-    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:N} (schedules);
-    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:N} (reminders);
-    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:1} (stats);
-    \draw[edge] (habits) -- node[rel, right, xshift=6pt] {1:N} (habit_tags);
-    \draw[edge] (tags) -- node[rel, right, xshift=6pt] {1:N} (habit_tags);
-    \draw[edge] (batch_jobs) -- node[rel, left, xshift=-6pt] {1:N} (batch_errors);
+    % --- RELATIONS ---
+    \draw[edge] (users) -- node[rel] {1:1} (profiles);
+    % \draw[edge] (users) -- node[rel] {1:N} (habits);
+    \draw[edge] (users) -- node[rel] {1:N} (batch_jobs);
+    \draw[edge] (users) -- node[rel] {1:N} (audit);
+    
+    % Curved lines for far objects
+    \draw[edge] (users.south west) to[out=240,in=60] node[rel] {1:N} (checkins.north east);
+    % \draw[edge] (users.south) to[out=260,in=90] node[rel, pos=0.3] {1:N} (audit.north east);
+    \draw[edge] (habits.east) to[out=260,in=140] node[rel, pos=0.3] {1:N} (stats.north west);    
+    \draw[edge] (users.south west) to[out=260,in=60] node[rel, pos=0.3] {1:N} (habits.north east);
+
+    \draw[edge] (habits) -- node[rel] {1:N} (checkins);
+    \draw[edge] (habits) -- node[rel] {1:N} (schedules);
+    \draw[edge] (habits) -- node[rel] {1:N} (habit_tags);
+    \draw[edge] (habits) -- node[rel] {1:N} (reminders);
+    
+    % \draw[edge] (habits) to[out=250,in=60] node[rel] {1:1} (stats.north east);
+    
+    % % Multi-segment paths for clarity
+    % \draw[edge] (habits.south west) .. controls +(-1,-1) and +(0,1) .. (reminders.north west);
+
+    \draw[edge] (tags) -- node[rel] {1:N} (habit_tags);
+    \draw[edge] (batch_jobs) -- node[rel] {1:N} (batch_errors);
+
 \end{tikzpicture}}
 \caption{Логическая схема базы данных}
 \label{fig:db-schema}

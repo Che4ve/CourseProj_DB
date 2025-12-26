@@ -1,0 +1,602 @@
+\documentclass[14pt,a4paper]{report}
+
+% Настройки языка и шрифтов
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{times}
+
+% Настройки полей (ГОСТ 7.32-2017)
+\usepackage[left=30mm, right=15mm, top=20mm, bottom=20mm]{geometry}
+
+% Настройки интервала и абзаца
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{indentfirst}
+\setlength{\parindent}{1.25cm}
+
+% Дополнительные пакеты
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{positioning, shapes.multipart, shadows, arrows.meta}
+\usepackage{dirtree}
+\usepackage{chngcntr}
+\usepackage{lastpage}
+\usepackage{caption}
+\DeclareCaptionLabelSeparator{emdash}{ --- }
+\captionsetup[table]{labelsep=emdash, justification=raggedright, singlelinecheck=false, font=small}
+\captionsetup[figure]{labelsep=emdash, justification=centering, font=small}
+\usepackage{enumitem}
+\setlist[itemize,1]{label=---}
+
+% Настройка заголовков (ГОСТ 7.32-2017)
+\titleformat{\chapter}[block]{\bfseries\Large\centering}{\thechapter\quad}{0pt}{\MakeUppercase}
+\titleformat{\section}{\bfseries\large}{\thesection\quad}{0pt}{}
+\titlespacing*{\chapter}{0pt}{0pt}{40pt}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+% Настройка названий структурных элементов
+\addto\captionsrussian{%
+  \renewcommand{\contentsname}{СОДЕРЖАНИЕ}%
+  \renewcommand{\bibname}{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}%
+  \renewcommand{\appendixname}{ПРИЛОЖЕНИЕ}%
+}
+
+% Настройка листингов кода для ч/б печати
+\lstset{
+    language=SQL,
+    basicstyle=\small\ttfamily,
+    keywordstyle=\bfseries,          % Жирный для ключевых слов
+    commentstyle=\itshape,           % Курсив для комментариев
+    stringstyle=\ttfamily,           % Моноширинный для строк
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{gray!5},  % Очень светлый фон (не мешает печати)
+    showspaces=false,
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    tabsize=2,
+    captionpos=b
+}
+
+\begin{document}
+\counterwithout{table}{chapter}
+
+% --- ТИТУЛЬНЫЙ ЛИСТ ---
+\begin{titlepage}
+    \centering
+    МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ РОССИЙСКОЙ ФЕДЕРАЦИИ\\
+    ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ ВЫСШЕГО ОБРАЗОВАНИЯ\\
+    «МОСКОВСКИЙ АВИАЦИОННЫЙ ИНСТИТУТ\\(национальный исследовательский университет)» (МАИ)\\
+    Институт № 8 «Компьютерные науки и прикладная математика»\\
+    Кафедра 806 «Вычислительная математика и программирование»\\
+    
+    \vfill
+    \textbf{\Large }\textbf{КУРСОВОЙ ПРОЕКТ}\\
+    по дисциплине «Базы данных»\\
+    Тема: «Разработка информационной системы и базы данных платформы технических публикаций»\\
+    
+    \vfill
+    \begin{flushright}
+        Студент: Бабинцева Д.В.\\
+        Группа: М8О-309Б-23\\
+        Преподаватель: Грубенко М.Д.\\
+        Оценка: \underline{\hspace{3cm}}\\
+        Дата: \underline{\hspace{3cm}}\\
+        Подпись: \underline{\hspace{3cm}}\\
+    \end{flushright}
+
+    
+    \vfill
+    Москва 2025
+\end{titlepage}
+
+\tableofcontents
+
+% --- РЕФЕРАТ ---
+\chapter*{РЕФЕРАТ}
+\addcontentsline{toc}{chapter}{РЕФЕРАТ}
+Отчет содержит \pageref{LastPage} с., 1 рис., 11 табл., 4 источника.
+
+Ключевые слова: БАЗА ДАННЫХ, POSTGRESQL, FASTAPI, ИНФОРМАЦИОННАЯ СИСТЕМА, АУДИТ, ТРИГГЕРЫ, CMS.
+
+Объектом исследования является информационная система «ByteJournal» для публикации технических статей.
+
+Цель работы --- проектирование и реализация полнофункциональной реляционной базы данных, интегрированной с backend-приложением.
+
+В результате работы спроектирована структура БД из 10 таблиц, реализована бизнес-логика на стороне СУБД (триггеры, функции), разработаны механизмы аудита и аналитической отчетности. Обеспечена высокая производительность через индексацию.
+
+Система реализована с использованием PostgreSQL, FastAPI и Streamlit.
+
+% --- ВВЕДЕНИЕ ---
+\chapter*{ВВЕДЕНИЕ}
+\addcontentsline{toc}{chapter}{ВВЕДЕНИЕ}
+В современном мире информационные технологии развиваются стремительными темпами, что порождает потребность в специализированных платформах для обмена знаниями. Данный курсовой проект посвящен разработке информационной системы «BitJournal» — платформы для публикации и обсуждения технических статей.
+
+Целью работы является проектирование и реализация полнофункциональной реляционной базы данных, интегрированной с backend-приложением, обеспечивающей надежное хранение контента, аудит изменений и аналитическую обработку данных. В ходе работы решаются задачи проектирования структуры БД, реализации бизнес-логики на стороне СУБД (триггеры, функции), оптимизации запросов и обеспечения целостности данных.
+
+% --- АНАЛИТИЧЕСКАЯ ЧАСТЬ ---
+\chapter{АНАЛИТИЧЕСКАЯ ЧАСТЬ}
+\section{Обзор предметной области}
+Предметная область системы — управление контентом (Content Management System, CMS) для технического сообщества. Основными сущностями являются пользователи, статьи, комментарии и категории. Система должна поддерживать различные роли пользователей (автор, читатель, администратор) и обеспечивать механизмы взаимодействия между ними через систему лайков и комментариев.
+
+\section{Постановка задачи}
+Необходимо разработать систему, удовлетворяющую следующим требованиям:
+\begin{itemize}
+    \item Хранение информации о пользователях и их ролях.
+    \item Управление публикациями статей с поддержкой категорий (связь многие-ко-многим).
+    \item Реализация системы социального взаимодействия (лайки, комментарии).
+    \item Автоматический аудит всех изменений в ключевых таблицах.
+    \item Обеспечение высокой производительности через индексацию.
+    \item Поддержка массового импорта данных с логированием ошибок.
+\end{itemize}
+
+% --- ПРОЕКТНАЯ ЧАСТЬ ---
+\chapter{ПРОЕКТНАЯ ЧАСТЬ}
+\section{Архитектура системы}
+Система построена на базе микросервисной архитектуры:
+\begin{itemize}
+    \item \textbf{СУБД:} PostgreSQL 16+ — хранение данных и реализация серверной логики.
+    \item \textbf{Backend:} Python 3.11 с использованием FastAPI — реализация REST API.
+    \item \textbf{ORM/Query Builder:} SQLAlchemy (async) — взаимодействие с БД через параметризованные запросы.
+    \item \textbf{Frontend:} Streamlit - реализация Веб-демонстратора.
+    \item \textbf{Контейнеризация:} Docker и Docker Compose — развертывание всей инфраструктуры.
+\end{itemize}
+
+\section{Проектирование структуры базы данных}
+Логическая структура базы данных спроектирована в соответствии с принципами нормализации (до 3НФ включительно). Основной упор сделан на обеспечение ссылочной целостности и минимизацию избыточности данных.
+
+\subsection{Схема базы данных}
+Логическая схема базы данных ByteJournal, отображающая основные сущности, их атрибуты и типы связей (1:1, 1:N, N:M), представлена в приложении Б.
+
+\subsection{Описание таблиц и атрибутов}
+Ниже представлено детальное описание атрибутов всех 10 сущностей системы. Все таблицы спроектированы с использованием соответствующих типов данных PostgreSQL и ограничений целостности.
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{roles} (Роли)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ, уникальный идентификатор роли. \\ \hline
+        \texttt{name} & VARCHAR(32) & Уникальное название роли (reader, author, admin). \\ \hline
+        \texttt{description} & TEXT & Описание полномочий роли. \\ \hline
+        \texttt{is\_system} & BOOLEAN & Флаг системной роли, запрещенной к удалению. \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{users} (Пользователи)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ, уникальный идентификатор пользователя. \\ \hline
+        \texttt{username} & VARCHAR(50) & Уникальное имя пользователя для входа (логин). \\ \hline
+        \texttt{password\_hash} & TEXT & Хешированное значение пароля. \\ \hline
+        \texttt{role\_id} & UUID & Внешний ключ, ссылка на роль в таблице \texttt{roles}. \\ \hline
+        \texttt{is\_active} & BOOLEAN & Флаг активности аккаунта. \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{articles} (Статьи)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ статьи. \\ \hline
+        \texttt{author\_id} & UUID & Внешний ключ, автор статьи (ссылка на \texttt{users}). \\ \hline
+        \texttt{title} & VARCHAR(300) & Заголовок статьи (индексируемое поле). \\ \hline
+        \texttt{body} & TEXT & Текстовое содержимое статьи. \\ \hline
+        \texttt{is\_published} & BOOLEAN & Статус публикации (опубликовано/черновик). \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{categories} (Категории)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ категории. \\ \hline
+        \texttt{name} & VARCHAR(100) & Уникальное название категории. \\ \hline
+        \texttt{description} & TEXT & Описание тематики категории. \\ \hline
+        \texttt{color} & VARCHAR(7) & HEX-код цвета для визуализации в интерфейсе. \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{article\_categories} (Связь статей и категорий)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ связи. \\ \hline
+        \texttt{article\_id} & UUID & Внешний ключ, ссылка на статью. \\ \hline
+        \texttt{category\_id} & UUID & Внешний ключ, ссылка на категорию. \\ \hline
+        \texttt{weight} & INTEGER & Вес (значимость) категории для данной статьи. \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{comments} (Комментарии)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ комментария. \\ \hline
+        \texttt{article\_id} & UUID & Внешний ключ, ссылка на комментируемую статью. \\ \hline
+        \texttt{user\_id} & UUID & Внешний ключ, ссылка на автора комментария. \\ \hline
+        \texttt{content} & TEXT & Текст комментария. \\ \hline
+        \texttt{is\_edited} & BOOLEAN & Флаг, указывающий на наличие редактирования. \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{likes} (Лайки)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ лайка. \\ \hline
+        \texttt{article\_id} & UUID & Внешний ключ, ссылка на статью. \\ \hline
+        \texttt{user\_id} & UUID & Внешний ключ, ссылка на пользователя. \\ \hline
+        \texttt{is\_active} & BOOLEAN & Статус лайка (активен/удален). \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{audit\_log} (Журнал аудита)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ записи аудита. \\ \hline
+        \texttt{table\_name} & TEXT & Имя таблицы, в которой произошло изменение. \\ \hline
+        \texttt{operation} & CHAR(1) & Тип операции: I (Insert), U (Update), D (Delete). \\ \hline
+        \texttt{record\_id} & UUID & ID измененной записи. \\ \hline
+        \texttt{author\_id} & UUID & Внешний ключ, ссылка на инициатора изменений. \\ \hline
+        \texttt{changed\_at} & TIMESTAMPTZ & Дата и время фиксации изменения. \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{import\_logs} (Логи импорта)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{id} & UUID & Первичный ключ лога импорта. \\ \hline
+        \texttt{user\_id} & UUID & Внешний ключ, ссылка на пользователя, запустившего импорт. \\ \hline
+        \texttt{filename} & TEXT & Имя импортируемого файла. \\ \hline
+        \texttt{row\_number} & INTEGER & Номер строки в файле с ошибкой. \\ \hline
+        \texttt{status} & TEXT & Статус обработки (success/error). \\ \hline
+        \texttt{error\_message} & TEXT & Текст ошибки при неудачном импорте. \\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \caption{Описание атрибутов таблицы \texttt{author\_article\_counters} (Счетчики авторов)}
+    \centering
+    \begin{tabular}{|p{4cm}|p{3cm}|p{8cm}|}
+        \hline
+        \textbf{Имя поля} & \textbf{Тип данных} & \textbf{Описание} \\ \hline
+        \texttt{author\_id} & UUID & Первичный и внешний ключ, ссылка на автора. \\ \hline
+        \texttt{article\_count} & INTEGER & Общее количество статей автора. \\ \hline
+        \texttt{total\_likes} & INTEGER & Суммарное количество лайков на всех статьях автора. \\ \hline
+        \texttt{last\_article\_date} & TIMESTAMPTZ & Дата публикации последней статьи. \\ \hline
+    \end{tabular}
+\end{table}
+
+\section{Реализация ограничений целостности}
+Для обеспечения корректности данных применены следующие ограничения:
+\begin{itemize}
+    \item \texttt{PRIMARY KEY} и \texttt{FOREIGN KEY} для всех связей.
+    \item \texttt{ON DELETE CASCADE} для автоматической очистки связанных данных (например, комментариев при удалении статьи).
+    \item \texttt{CHECK} ограничения: проверка длины заголовков (\(\ge 3\)), формат цвета категории (\texttt{\#RRGGBB}), положительные значения счетчиков.
+    \item \texttt{UNIQUE} ограничения: уникальность пары (пользователь, статья) для лайков.
+\end{itemize}
+
+\section{Триггеры и функции}
+Бизнес-логика реализована на стороне СУБД для обеспечения атомарности:
+\begin{itemize}
+    \item \textbf{Аудит:} функция \texttt{fn\_audit()} и триггеры на таблицах \texttt{articles} и \texttt{users} фиксируют операции INSERT, UPDATE, DELETE.
+    \item \textbf{Агрегация:} функция \texttt{fn\_update\_counters()} автоматически обновляет таблицу \texttt{author\_article\_counters} при создании статей или получении лайков.
+    \item \textbf{Отчетность:} табличная функция \texttt{fn\_article\_report()} генерирует сводный отчет по авторам за произвольный период.
+\end{itemize}
+
+\section{Представления (VIEW)}
+Реализовано более трех представлений для аналитики:
+\begin{itemize}
+    \item \texttt{v\_article\_stats} — статистика по каждой статье.
+    \item \texttt{v\_user\_activity} — анализ активности пользователей на основе данных аудита.
+    \item \texttt{v\_recent\_articles} — оптимизированная выборка последних публикаций с данными авторов.
+\end{itemize}
+
+\section{Оптимизация и анализ производительности}
+Для ускорения выборок созданы индексы:
+\begin{itemize}
+    \item B-tree индексы на внешние ключи (\texttt{author\_id}, \texttt{article\_id}).
+    \item Индексы на поля сортировки (\texttt{created\_at DESC}).
+    \item Уникальный индекс на \texttt{username}.
+\end{itemize}
+
+\textbf{Пример оптимизации:}
+Для оценки эффективности индексации был проведен сравнительный анализ выполнения запроса выборки комментариев для статьи с использованием команды \texttt{EXPLAIN ANALYZE}. Результаты сравнения представлены в таблице \ref{tab:optimization_results}. Подробные листинги планов выполнения запросов приведены в приложении В.
+
+\begin{table}[H]
+    \caption{Результаты оптимизации запроса выборки комментариев}
+    \label{tab:optimization_results}
+    \centering
+    \begin{tabular}{|p{6cm}|p{4cm}|p{4cm}|}
+        \hline
+        \textbf{Параметр} & \textbf{Без индекса} & \textbf{С индексом} \\ \hline
+        Тип сканирования & Seq Scan & Bitmap Heap Scan \\ \hline
+        Время планирования (Planning Time) & 0.278 мс & 0.558 мс \\ \hline
+        Время выполнения (Execution Time) & 1.963 мс & 0.083 мс \\ \hline
+        Ускорение выполнения & --- & $\approx$ 24 раз \\ \hline
+    \end{tabular}
+\end{table}
+
+% --- ТЕХНОЛОГИЧЕСКАЯ ЧАСТЬ ---
+\chapter{ТЕХНОЛОГИЧЕСКАЯ ЧАСТЬ}
+\section{Контейнеризация и запуск}
+Проект разворачивается с помощью Docker Compose. Стек включает:
+\begin{itemize}
+    \item \texttt{db}: PostgreSQL 16 с инициализацией через SQL-скрипты.
+    \item \texttt{backend}: FastAPI приложение, подключающееся к БД через Docker.    
+    \item \texttt{frontend}: Веб-демонстратор на streamlit с регистрацией/авторизацией, просмотром статей, комментариями, лайками и возможностью написать свою статью.
+\end{itemize}
+
+\section{Массовая загрузка данных}
+Реализован эндпоинт \texttt{/api/batch-import}, выполняющий транзакционную загрузку статей. Система обрабатывает ошибки валидации на уровне каждой записи, логирует их в \texttt{import\_logs} и продолжает выполнение батча, что обеспечивает устойчивость процесса импорта.
+
+\section{Тестирование и наполнение}
+Для демонстрации и тестирования работы системы был использован фреймворк Faker, который генерирует:
+\begin{itemize}
+    \item 150+ пользователей.
+    \item 800+ статей с реалистичным контентом.
+    \item 3500+ лайков и 2500+ комментариев.
+\end{itemize}
+Это позволяет проверить работу триггеров агрегации и производительность индексов на реальных объемах данных.
+
+% --- ЗАКЛЮЧЕНИЕ ---
+\chapter*{ЗАКЛЮЧЕНИЕ}
+\addcontentsline{toc}{chapter}{ЗАКЛЮЧЕНИЕ}
+В ходе выполнения курсового проекта была разработана информационная система «BitJournal». Реализованная база данных соответствует всем требованиям технического задания: содержит 10 взаимосвязанных таблиц, обеспечивает целостность данных через ограничения и триггеры, включает механизмы аудита и аналитической отчетности.
+
+Интеграция с backend-приложением на FastAPI позволила реализовать современный программный интерфейс для управления данными, а использование Docker обеспечило легкость развертывания и масштабирования системы.
+
+В результате был реализован MVP платформы для технических публикаций с возможностью регистрации, авторизации, написания статей, чтения чужих статей, а также лайками и комментариями.
+
+\newpage
+\addcontentsline{toc}{chapter}{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
+\begin{thebibliography}{99}
+    \bibitem{postgres} PostgreSQL Documentation. [Электронный ресурс]. URL: https://www.postgresql.org/docs/
+    \bibitem{fastapi} FastAPI framework. [Электронный ресурс]. URL: https://fastapi.tiangolo.com/
+    \bibitem{python} Python 3.11.14 documentation. [Электронный ресурс]. URL: https://docs.python.org/3.11/
+    \bibitem{docker} Docker Documentation. [Электронный ресурс]. URL: https://docs.docker.com
+\end{thebibliography}
+
+\newpage
+\appendix
+\renewcommand{\thechapter}{\Asbuk{chapter}}
+\titleformat{\chapter}[block]{\bfseries\Large\centering}{\appendixname\ \thechapter}{1em}{\MakeUppercase}
+\titlespacing*{\chapter}{0pt}{0pt}{20pt}
+
+\chapter{АРХИТЕКТУРА ПРОГРАММНОГО КОМПЛЕКСА}
+
+\dirtree{%
+.1 BitJournal/ .
+.2 backend/ \DTcomment{FastAPI сервис}.
+.3 app/ \DTcomment{Логика API и работа с БД}.
+.3 Dockerfile .
+.3 requirements.txt .
+.2 streamlit-app/ \DTcomment{Frontend на Streamlit}.
+.3 app.py \DTcomment{Основной интерфейс}.
+.3 api\_client.py \DTcomment{Клиент для связи с бэкендом}.
+.3 Dockerfile .
+.2 sql/ \DTcomment{Скрипты инициализации БД}.
+.3 functions/ \DTcomment{Хранимые процедуры и отчеты}.
+.3 triggers/ \DTcomment{Аудит и счетчики}.
+.3 views/ \DTcomment{Представления для статистики}.
+.3 init.sql \DTcomment{Точка входа инициализации}.
+.2 docker-compose.yml \DTcomment{Оркестрация всех сервисов}.
+.2 README.md .
+}
+
+\newpage
+\chapter{СХЕМА БАЗЫ ДАННЫХ}
+\label{App:Schema}
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.0cm and 1.5cm,
+        % Общий стиль таблиц для ч/б печати
+        table/.style={
+            rectangle split, 
+            rectangle split parts=2,
+            draw=black, 
+            thick,
+            rounded corners=2pt,
+            minimum width=3.5cm, 
+            font=\scriptsize\ttfamily,
+            align=left, 
+            fill=white,
+            drop shadow={opacity=0.3, shadow xshift=2pt, shadow yshift=-2pt}
+        },
+        % Стили таблиц (градации серого для ч/б печати)
+        user_tab/.style={table, rectangle split part fill={black!10, white}},
+        content_tab/.style={table, rectangle split part fill={white, white}}, 
+        log_tab/.style={table, rectangle split part fill={black!20, white}},
+        link_tab/.style={table, rectangle split part fill={black!5, white}}, 
+        % Стили линий - только черный
+        edge/.style={->, >=latex, thick, color=black, rounded corners=3pt},
+        label_node/.style={font=\tiny\sffamily, fill=white, inner sep=1pt}
+    ]
+        % --- СЛОЙ 1: Пользователи и Метаданные ---
+        \node[user_tab] (users) {
+            \textbf{USERS}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            username: VARCHAR \\
+            role\_id: UUID (FK) \\
+            is\_active: BOOL
+        };
+
+        \node[user_tab, left=of users] (roles) {
+            \textbf{ROLES}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            name: VARCHAR \\
+            is\_system: BOOL
+        };
+
+        \node[log_tab, right=of users] (audit) {
+            \textbf{AUDIT\_LOG}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            table\_name: TEXT \\
+            operation: CHAR \\
+            author\_id: UUID (FK)
+        };
+
+        \node[log_tab, above=of users, xshift=-2.2cm] (import) {
+            \textbf{IMPORT\_LOGS}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            user\_id: UUID (FK) \\
+            status: TEXT
+        };
+
+        \node[log_tab, above=of users, xshift=2.2cm] (counters) {
+            \textbf{COUNTERS}
+            \nodepart{second}
+            \underline{author\_id: UUID (FK)} \\
+            article\_count: INT \\
+            total\_likes: INT
+        };
+
+        % --- СЛОЙ 2: Контент ---
+        \node[content_tab, below=2cm of users] (articles) {
+            \textbf{ARTICLES}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            author\_id: UUID (FK) \\
+            title: VARCHAR \\
+            body: TEXT
+        };
+
+        \node[content_tab, right=of articles] (comments) {
+            \textbf{COMMENTS}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            article\_id: UUID (FK) \\
+            user\_id: UUID (FK) \\
+            content: TEXT
+        };
+
+        \node[content_tab, left=of articles] (categories) {
+            \textbf{CATEGORIES}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            name: VARCHAR \\
+            color: VARCHAR
+        };
+
+        % --- СЛОЙ 3: Связи и Лайки ---
+        \node[link_tab, below=of categories] (art_cat) {
+            \textbf{ART\_CATEGORIES}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            article\_id: UUID (FK) \\
+            category\_id: UUID (FK)
+        };
+
+        \node[content_tab, below=of comments] (likes) {
+            \textbf{LIKES}
+            \nodepart{second}
+            \underline{id: UUID} \\
+            article\_id: UUID (FK) \\
+            user\_id: UUID (FK) \\
+            is\_active: BOOL
+        };
+
+        % --- СВЯЗИ ---
+        % Users -> Roles
+        \draw[edge] (roles) -- (users) node[midway, label_node] {1:N};
+        
+        % Users -> Logs
+        \draw[edge] (users.north) |- (import.east) node[midway, label_node] {1:N};
+        \draw[edge] (users) -- (audit) node[midway, label_node] {1:N};
+        \draw[edge] (users.north) |- (counters.west) node[midway, label_node] {1:1};
+        
+        % Users -> Articles
+        \draw[edge] (users) -- (articles) node[midway, label_node] {1:N};
+
+        % Users -> Comments (исправленный путь)
+        \draw[edge] (users.east) -- ++(0.5,0) |- (comments.north west) node[pos=0.75, label_node] {1:N};
+
+        % Users -> Likes (исправленный путь)
+        \draw[edge] (users.east) -- ++(1.0,0) |- (likes.west) node[pos=0.85, label_node] {1:N};
+
+        % Articles -> Comments, Likes
+        \draw[edge] (articles) -- (comments) node[midway, label_node] {1:N};
+        \draw[edge] (articles.south east) -- (likes.north west) node[midway, label_node] {1:N};
+
+        % Categories -> Art_Cat
+        \draw[edge] (categories) -- (art_cat) node[midway, label_node] {1:N};
+        % Articles -> Art_Cat
+        \draw[edge] (articles.south west) -- (art_cat.north east) node[midway, label_node] {1:N};
+
+    \end{tikzpicture}
+    \caption{Полная логическая схема базы данных BitJournal}
+\end{figure}
+
+\newpage
+\chapter{РЕЗУЛЬТАТЫ ВЫПОЛНЕНИЯ КОМАНДЫ EXPLAIN ANALYZE}
+\label{App:Explain}
+
+\section*{Запрос}
+\begin{lstlisting}[language=SQL]
+EXPLAIN ANALYZE 
+SELECT * from comments 
+where article_id = 'some_article_id';
+\end{lstlisting}
+
+\section*{План выполнения без использования индекса}
+\begin{lstlisting}[language=SQL, numbers=none]
+Seq Scan on comments  (cost=0.00..596.31 rows=107 width=97) 
+  (actual time=1.944..1.945 rows=0 loops=1)
+  Filter: (article_id = 'f8aa1fed-36e3-41e7-ba84-fbf6f1617ec1'::uuid)
+  Rows Removed by Filter: 5000
+Planning Time: 0.278 ms
+Execution Time: 1.963 ms
+\end{lstlisting}
+
+\section*{План выполнения с использованием индекса}
+\begin{lstlisting}[language=SQL, numbers=none]
+Bitmap Heap Scan on comments  (cost=5.12..230.12 rows=107 width=97) 
+  (actual time=0.044..0.045 rows=0 loops=1)
+  Recheck Cond: (article_id = 'f8aa1fed-36e3-41e7-ba84-fbf6f1617ec1'::uuid)
+  ->  Bitmap Index Scan on idx_comments_article_id  
+        (cost=0.00..5.09 rows=107 width=0) 
+        (actual time=0.041..0.041 rows=0 loops=1)
+        Index Cond: (article_id = 'f8aa1fed-36e3-41e7-ba84-fbf6f1617ec1'::uuid)
+Planning Time: 0.558 ms
+Execution Time: 0.083 ms
+\end{lstlisting}
+
+\end{document}

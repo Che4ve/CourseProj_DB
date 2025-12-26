@@ -25,11 +25,11 @@ async function applyMigration(filename: string) {
   `;
 
 	if (existing.length > 0) {
-		console.log(`⏭️  ${filename} already applied`);
+		console.log(`⏭${filename} already applied`);
 		return;
 	}
 
-	console.log(`📝 Applying ${filename}...`);
+	console.log(`Applying ${filename}...`);
 	const startTime = Date.now();
 
 	// Используем прямое подключение к PostgreSQL для выполнения DDL
@@ -51,23 +51,23 @@ async function applyMigration(filename: string) {
       VALUES (${filename}, ${checksum}, ${executionTime}, 'system')
     `;
 
-		console.log(`✅ ${filename} applied in ${executionTime}ms`);
+		console.log(`${filename} applied in ${executionTime}ms`);
 	} finally {
 		await client.end();
 	}
 }
 
 async function main() {
-	console.log("🔧 Applying manual SQL migrations...\n");
+	console.log("Applying manual SQL migrations...\n");
 
 	try {
 		for (const migration of migrations) {
 			await applyMigration(migration);
 		}
 
-		console.log("\n✅ All migrations applied successfully!");
+		console.log("\nAll migrations applied successfully!");
 	} catch (error) {
-		console.error("\n❌ Error applying migrations:", error);
+		console.error("\nError applying migrations:", error);
 		process.exit(1);
 	} finally {
 		await prisma.$disconnect();

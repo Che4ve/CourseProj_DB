@@ -721,7 +721,13 @@ created\_at & TIMESTAMPTZ & DEFAULT NOW() & Дата создания \\
 \end{itemize}
 
 \subsection{Реализация SQL-функциональности}
-Базовые CRUD-операции реализованы через Prisma ORM, а сложные выборки и отчеты --- через параметризованные SQL-запросы. Реализованы триггеры аудита и автоматического обновления агрегированной статистики, скалярная функция \texttt{calc\_completion\_rate} и табличная функция \texttt{report\_user\_habits}. Полные скрипты приведены в приложении Б и в файлах \texttt{packages/db/sql/001\_triggers.sql}--\texttt{004\_indexes.sql}.
+Базовые CRUD-операции реализованы через Prisma ORM, а сложные выборки и отчеты --- через параметризованные SQL-запросы. Реализованы триггеры аудита и автоматического обновления агрегированной статистики, скалярная функция \texttt{calc\_completion\_rate} и табличная функция \texttt{report\_user\_habits}. Основные SQL-скрипты:
+\begin{itemize}
+  \item \texttt{packages/db/sql/001\_triggers.sql} --- триггеры аудита и агрегатов;
+  \item \texttt{packages/db/sql/002\_functions.sql} --- функции;
+  \item \texttt{packages/db/sql/003\_views.sql} --- представления;
+  \item \texttt{packages/db/sql/004\_indexes.sql} --- индексы.
+\end{itemize}
 
 \subsection{Описание API и взаимодействия с БД}
 Backend предоставляет REST API с документацией в Swagger. Основные группы эндпойнтов:
@@ -750,7 +756,7 @@ SELECT * FROM v_user_habit_summary
 WHERE user_id = $1;
 \end{lstlisting}
 
-Для повышения производительности созданы индексы на полях, используемых в фильтрации и сортировке. В таблице \ref{tab:perf} приведено сравнение времени выполнения запросов до и после индексирования. Полные планы EXPLAIN ANALYZE приведены в приложении В.
+Для повышения производительности созданы индексы на полях, используемых в фильтрации и сортировке. В таблице \ref{tab:perf} приведено сравнение времени выполнения запросов до и после индексирования. Полные планы EXPLAIN ANALYZE приведены в файле \texttt{docs/perf.md}. Основные результаты: 52x быстрее для истории отметок и 69x быстрее для журнала аудита, среднее ускорение около 60x.
 
 \begin{table}[H]
 \caption{Сравнение производительности запросов}
@@ -767,7 +773,7 @@ WHERE user_id = $1;
 \end{tabular}
 \end{table}
 
-Ключевые индексы: \texttt{idx\_habits\_user\_id}, \texttt{idx\_habit\_checkins\_user\_date}, \texttt{idx\_audit\_log\_user\_time} и др. (см. приложение Б).
+Ключевые индексы: \texttt{idx\_habits\_user\_id}, \texttt{idx\_habit\_checkins\_user\_date}, \texttt{idx\_audit\_log\_user\_time} и др.
 
 \newpage
 \section{ТЕХНОЛОГИЧЕСКАЯ ЧАСТЬ}
@@ -971,26 +977,5 @@ WHERE user_id = $1;
 \caption{Логическая схема базы данных}
 \label{fig:db-schema}
 \end{figure}
-
-\newpage
-\section*{ПРИЛОЖЕНИЕ Б Примеры SQL-скриптов}
-\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ Б Примеры SQL-скриптов}
-В приложении приведены ссылки на основные SQL-скрипты проекта:
-\begin{itemize}
-  \item \texttt{packages/db/sql/001\_triggers.sql} --- триггеры аудита и агрегатов;
-  \item \texttt{packages/db/sql/002\_functions.sql} --- скалярные и табличные функции;
-  \item \texttt{packages/db/sql/003\_views.sql} --- представления для аналитики;
-  \item \texttt{packages/db/sql/004\_indexes.sql} --- индексы для оптимизации запросов.
-\end{itemize}
-
-\newpage
-\section*{ПРИЛОЖЕНИЕ В Результаты EXPLAIN ANALYZE}
-\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ В Результаты EXPLAIN ANALYZE}
-Полные планы выполнения запросов приведены в файле \texttt{docs/perf.md}. Основные результаты оптимизации:
-\begin{itemize}
-  \item история отметок пользователя за период: 145.456 мс \(\rightarrow\) 2.789 мс (52x быстрее);
-  \item журнал аудита за 24 часа: 89.456 мс \(\rightarrow\) 1.289 мс (69x быстрее);
-  \item среднее ускорение ключевых запросов: около 60x.
-\end{itemize}
 
 \end{document}

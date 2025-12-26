@@ -6,7 +6,7 @@ CREATE TABLE "users" (
     "full_name" TEXT NOT NULL,
     "role" VARCHAR(50) NOT NULL DEFAULT 'user',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "login_count" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
@@ -37,7 +37,7 @@ CREATE TABLE "habits" (
     "priority" SMALLINT NOT NULL DEFAULT 0,
     "is_archived" BOOLEAN NOT NULL DEFAULT false,
     "display_order" INTEGER NOT NULL DEFAULT 0,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "habits_pkey" PRIMARY KEY ("id")
 );
@@ -62,11 +62,11 @@ CREATE TABLE "habit_checkins" (
     "habit_id" UUID NOT NULL,
     "user_id" UUID NOT NULL,
     "checkin_date" DATE NOT NULL,
-    "checkin_time" TIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "checkin_time" TIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "notes" TEXT,
     "mood_rating" SMALLINT,
     "duration_minutes" INTEGER,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "habit_checkins_pkey" PRIMARY KEY ("id")
 );
@@ -79,7 +79,7 @@ CREATE TABLE "tags" (
     "color" VARCHAR(7) NOT NULL DEFAULT '#gray',
     "usage_count" INTEGER NOT NULL DEFAULT 0,
     "is_system" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "tags_pkey" PRIMARY KEY ("id")
 );
@@ -92,7 +92,7 @@ CREATE TABLE "habit_tags" (
     "priority" SMALLINT NOT NULL DEFAULT 0,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
     "assigned_by" VARCHAR(50) NOT NULL DEFAULT 'user',
-    "assigned_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "assigned_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "habit_tags_pkey" PRIMARY KEY ("id")
 );
@@ -101,12 +101,12 @@ CREATE TABLE "habit_tags" (
 CREATE TABLE "reminders" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "habit_id" UUID NOT NULL,
-    "reminder_time" TIME(6) NOT NULL,
+    "reminder_time" TIME NOT NULL,
     "days_of_week" SMALLINT NOT NULL DEFAULT 127,
     "notification_text" TEXT,
     "delivery_method" VARCHAR(20) NOT NULL DEFAULT 'push',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "reminders_pkey" PRIMARY KEY ("id")
 );
@@ -121,7 +121,7 @@ CREATE TABLE "habit_stats" (
     "completion_rate" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
     "average_mood" DECIMAL(3,2),
     "last_checkin_at" DATE,
-    "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "habit_stats_pkey" PRIMARY KEY ("id")
 );
@@ -129,14 +129,14 @@ CREATE TABLE "habit_stats" (
 -- CreateTable
 CREATE TABLE "audit_log" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "table_name" VARCHAR(100) NOT NULL,
+    "table_name" TEXT NOT NULL,
     "operation" VARCHAR(10) NOT NULL,
     "record_id" UUID,
     "user_id" UUID,
     "old_data" JSONB,
     "new_data" JSONB,
-    "ip_address" INET,
-    "changed_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ip_address" VARCHAR(50),
+    "changed_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id")
 );
@@ -146,7 +146,7 @@ CREATE TABLE "_manual_migrations" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" VARCHAR(255) NOT NULL,
     "checksum" CHAR(64),
-    "applied_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "applied_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "execution_time_ms" INTEGER,
     "status" VARCHAR(20) NOT NULL DEFAULT 'success',
     "applied_by" TEXT,
@@ -165,8 +165,8 @@ CREATE TABLE "batch_import_jobs" (
     "error_count" INTEGER NOT NULL DEFAULT 0,
     "progress_percent" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
     "file_size_bytes" BIGINT,
-    "started_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "completed_at" TIMESTAMPTZ(6),
+    "started_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completed_at" TIMESTAMPTZ,
 
     CONSTRAINT "batch_import_jobs_pkey" PRIMARY KEY ("id")
 );
@@ -179,7 +179,7 @@ CREATE TABLE "batch_import_errors" (
     "record_data" JSONB NOT NULL,
     "error_message" TEXT NOT NULL,
     "error_code" VARCHAR(50),
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "batch_import_errors_pkey" PRIMARY KEY ("id")
 );

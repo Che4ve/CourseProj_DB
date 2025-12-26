@@ -21,7 +21,7 @@ model User {
   fullName      String        @map("full_name") @db.Text
   role          String        @default("user") @db.VarChar(50)
   isActive      Boolean       @default(true) @map("is_active")
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
   loginCount    Int           @default(0) @map("login_count")
 
   profile       UserProfile?
@@ -58,7 +58,7 @@ model Habit {
   priority     Int       @default(0) @db.SmallInt
   isArchived   Boolean   @default(false) @map("is_archived")
   displayOrder Int       @default(0) @map("display_order")
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   schedules  HabitSchedule[]
@@ -92,11 +92,11 @@ model HabitCheckin {
   habitId         String    @map("habit_id") @db.Uuid
   userId          String    @map("user_id") @db.Uuid
   checkinDate     DateTime  @map("checkin_date") @db.Date
-  checkinTime     DateTime  @default(now()) @map("checkin_time") @db.Time(6)
+  checkinTime     DateTime  @default(now()) @map("checkin_time") @db.Time
   notes           String?   @db.Text
   moodRating      Int?      @map("mood_rating") @db.SmallInt
   durationMinutes Int?      @map("duration_minutes")
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -113,7 +113,7 @@ model Tag {
   color      String    @default("#gray") @db.VarChar(7)
   usageCount Int       @default(0) @map("usage_count")
   isSystem   Boolean   @default(false) @map("is_system")
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   habits HabitTag[]
 
@@ -128,7 +128,7 @@ model HabitTag {
   priority   Int       @default(0) @db.SmallInt
   isPrimary  Boolean   @default(false) @map("is_primary")
   assignedBy String    @default("user") @map("assigned_by") @db.VarChar(50)
-  assignedAt DateTime  @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  assignedAt DateTime  @default(now()) @map("assigned_at") @db.Timestamptz
 
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
   tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
@@ -141,12 +141,12 @@ model HabitTag {
 model Reminder {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   habitId          String    @map("habit_id") @db.Uuid
-  reminderTime     DateTime  @map("reminder_time") @db.Time(6)
+  reminderTime     DateTime  @map("reminder_time") @db.Time
   daysOfWeek       Int       @default(127) @map("days_of_week") @db.SmallInt
   notificationText String?   @map("notification_text") @db.Text
   deliveryMethod   String    @default("push") @map("delivery_method") @db.VarChar(20)
   isActive         Boolean   @default(true) @map("is_active")
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
@@ -163,24 +163,24 @@ model HabitStat {
   completionRate Decimal   @default(0.00) @map("completion_rate") @db.Decimal(5, 2)
   averageMood    Decimal?  @map("average_mood") @db.Decimal(3, 2)
   lastCheckinAt  DateTime? @map("last_checkin_at") @db.Date
-  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz
 
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@map("habit_stats")
 }
 
-// 10. AuditLog - 9 колонок, 6 РАЗНЫХ типов: UUID, String, Json, DateTime, Inet (String в Prisma)
+// 10. AuditLog - 9 колонок, 6 РАЗНЫХ типов: UUID, String, Json, DateTime, String (VarChar)
 model AuditLog {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tableName String    @map("table_name") @db.VarChar(100)
+  tableName String    @map("table_name") @db.Text
   operation String    @db.VarChar(10)
   recordId  String?   @map("record_id") @db.Uuid
   userId    String?   @map("user_id") @db.Uuid
   oldData   Json?     @map("old_data") @db.JsonB
   newData   Json?     @map("new_data") @db.JsonB
-  ipAddress String?   @map("ip_address") @db.Inet
-  changedAt DateTime  @default(now()) @map("changed_at") @db.Timestamptz(6)
+  ipAddress String?   @map("ip_address") @db.VarChar(50)
+  changedAt DateTime  @default(now()) @map("changed_at") @db.Timestamptz
 
   @@index([changedAt(sort: Desc)])
   @@map("audit_log")
@@ -191,7 +191,7 @@ model ManualMigration {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String    @unique @db.VarChar(255)
   checksum        String?   @db.Char(64)
-  appliedAt       DateTime  @default(now()) @map("applied_at") @db.Timestamptz(6)
+  appliedAt       DateTime  @default(now()) @map("applied_at") @db.Timestamptz
   executionTimeMs Int?      @map("execution_time_ms")
   status          String    @default("success") @db.VarChar(20)
   appliedBy       String?   @map("applied_by") @db.Text
@@ -210,8 +210,8 @@ model BatchImportJob {
   errorCount      Int       @default(0) @map("error_count")
   progressPercent Decimal   @default(0.00) @map("progress_percent") @db.Decimal(5, 2)
   fileSizeBytes   BigInt?   @map("file_size_bytes")
-  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
-  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz
 
   user   User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   errors BatchImportError[]
@@ -227,7 +227,7 @@ model BatchImportError {
   recordData   Json     @map("record_data") @db.JsonB
   errorMessage String   @map("error_message") @db.Text
   errorCode    String?  @map("error_code") @db.VarChar(50)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   job BatchImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
 

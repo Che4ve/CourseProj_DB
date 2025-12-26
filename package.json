@@ -23,6 +23,7 @@
 		"db:migrate": "turbo run db:migrate --filter=@repo/db",
 		"db:seed": "turbo run db:seed --filter=@repo/db",
 		"db:sql": "turbo run db:sql --filter=@repo/db",
+		"db:setup": "pnpm db:generate && pnpm db:migrate && pnpm db:sql && pnpm db:seed",
 		"db:studio": "turbo run db:studio --filter=@repo/db",
 		"db:erd": "prisma generate && echo 'ERD generated in prisma/ERD.svg'",
 		"docker:up": "docker-compose up -d",

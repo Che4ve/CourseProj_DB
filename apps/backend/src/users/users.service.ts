@@ -26,32 +26,68 @@ export class UsersService {
   }
 
   async getProfile(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        profile: true,
-      },
-    });
+    const [user, summaryRow] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          profile: true,
+        },
+      }),
+      this.prisma.$queryRaw<
+        Array<{
+          total_habits: bigint;
+          good_habits: bigint;
+          bad_habits: bigint;
+          total_checkins: bigint;
+          last_activity: Date | null;
+        }>
+      >`
+        SELECT
+          total_habits,
+          good_habits,
+          bad_habits,
+          total_checkins,
+          last_activity
+        FROM v_user_habit_summary
+        WHERE user_id = ${userId}::uuid
+      `,
+    ]);
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
+    const summary = summaryRow[0]
+      ? {
+          totalHabits: Number(summaryRow[0].total_habits),
+          goodHabits: Number(summaryRow[0].good_habits),
+          badHabits: Number(summaryRow[0].bad_habits),
+          totalCheckins: Number(summaryRow[0].total_checkins),
+          lastActivity: summaryRow[0].last_activity,
+        }
+      : {
+          totalHabits: 0,
+          goodHabits: 0,
+          badHabits: 0,
+          totalCheckins: 0,
+          lastActivity: null,
+        };
+
     if (user.profile) {
-      return user;
+      return { ...user, summary };
     }
 
     const profile = await this.prisma.userProfile.create({
       data: { userId },
     });
 
-    return { ...user, profile };
+    return { ...user, profile, summary };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

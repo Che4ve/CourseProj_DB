@@ -1,6 +1,7 @@
--- ========================================
--- VIEW 1: Сводка по привычкам пользователя
--- ========================================
+DROP VIEW IF EXISTS v_user_habit_summary;
+DROP VIEW IF EXISTS v_daily_completion;
+DROP VIEW IF EXISTS v_tag_usage;
+
 CREATE OR REPLACE VIEW v_user_habit_summary AS
 SELECT 
   u.id as user_id,
@@ -16,26 +17,21 @@ LEFT JOIN habits h ON h.user_id = u.id AND NOT h.is_archived
 LEFT JOIN habit_stats hs ON hs.habit_id = h.id
 GROUP BY u.id, u.email, u.full_name;
 
--- ========================================
--- VIEW 2: Ежедневная статистика
--- ========================================
 CREATE OR REPLACE VIEW v_daily_completion AS
 SELECT 
+  hc.user_id,
   hc.checkin_date,
   COUNT(*) as total_checkins,
-  COUNT(DISTINCT hc.user_id) as active_users,
-  COUNT(DISTINCT hc.habit_id) as habits_completed,
+  COUNT(DISTINCT hc.habit_id) as unique_habits,
   ROUND(AVG(hc.mood_rating), 2) as avg_mood,
   SUM(hc.duration_minutes) as total_minutes
 FROM habit_checkins hc
-GROUP BY hc.checkin_date
+GROUP BY hc.user_id, hc.checkin_date
 ORDER BY hc.checkin_date DESC;
 
--- ========================================
--- VIEW 3: Использование тегов
--- ========================================
 CREATE OR REPLACE VIEW v_tag_usage AS
 SELECT 
+  h.user_id,
   t.id as tag_id,
   t.name as tag_name,
   t.color,
@@ -44,7 +40,6 @@ SELECT
   MAX(ht.assigned_at) as last_used
 FROM tags t
 LEFT JOIN habit_tags ht ON ht.tag_id = t.id
-GROUP BY t.id, t.name, t.color
+LEFT JOIN habits h ON h.id = ht.habit_id
+GROUP BY h.user_id, t.id, t.name, t.color
 ORDER BY usage_count DESC;
-
-

@@ -41,17 +41,15 @@ export class ReportsService {
 			}>
 		>`
       SELECT 
-        hc.checkin_date as date,
-        COUNT(*) as total_checkins,
-        COUNT(DISTINCT hc.habit_id) as unique_habits,
-        ROUND(AVG(hc.mood_rating), 2) as avg_mood,
-        SUM(hc.duration_minutes) as total_duration
-      FROM habit_checkins hc
-      JOIN habits h ON h.id = hc.habit_id
-      WHERE h.user_id = ${userId}::uuid
-        AND hc.checkin_date >= CURRENT_DATE - ${days}::integer
-      GROUP BY hc.checkin_date
-      ORDER BY hc.checkin_date DESC
+        checkin_date as date,
+        total_checkins,
+        unique_habits,
+        avg_mood,
+        total_minutes as total_duration
+      FROM v_daily_completion
+      WHERE user_id = ${userId}::uuid
+        AND checkin_date >= CURRENT_DATE - ${days}::integer
+      ORDER BY checkin_date DESC
     `;
 
 		return result.map((row) => ({
@@ -84,17 +82,61 @@ export class ReportsService {
 				last_checkin: Date | null;
 			}>
 		>`
-      SELECT 
+      WITH habit_list AS (
+        SELECT id, name
+        FROM habits
+        WHERE user_id = ${userId}::uuid
+          AND NOT is_archived
+      ),
+      streaks AS (
+        SELECT
+          h.id as habit_id,
+          h.name as habit_name,
+          hc.checkin_date::date as checkin_date,
+          hc.checkin_date::date
+            - (ROW_NUMBER() OVER (PARTITION BY h.id ORDER BY hc.checkin_date))::int as grp
+        FROM habit_list h
+        JOIN habit_checkins hc ON hc.habit_id = h.id
+      ),
+      streak_counts AS (
+        SELECT
+          habit_id,
+          habit_name,
+          grp,
+          COUNT(*)::int as streak_len,
+          MAX(checkin_date) as streak_end
+        FROM streaks
+        GROUP BY habit_id, habit_name, grp
+      ),
+      latest_streak AS (
+        SELECT DISTINCT ON (habit_id)
+          habit_id,
+          habit_name,
+          streak_len,
+          streak_end
+        FROM streak_counts
+        ORDER BY habit_id, streak_end DESC
+      ),
+      longest_streak AS (
+        SELECT habit_id, MAX(streak_len)::int as longest_streak
+        FROM streak_counts
+        GROUP BY habit_id
+      )
+      SELECT
         h.id as habit_id,
         h.name as habit_name,
-        COALESCE(hs.current_streak, 0) as current_streak,
-        COALESCE(hs.longest_streak, 0) as longest_streak,
-        hs.last_checkin_at as last_checkin
-      FROM habits h
-      LEFT JOIN habit_stats hs ON hs.habit_id = h.id
-      WHERE h.user_id = ${userId}::uuid
-        AND NOT h.is_archived
-      ORDER BY hs.current_streak DESC NULLS LAST
+        CASE
+          WHEN ls.streak_end IS NOT NULL
+            AND ls.streak_end >= CURRENT_DATE - 1
+            THEN ls.streak_len
+          ELSE 0
+        END as current_streak,
+        COALESCE(lg.longest_streak, 0) as longest_streak,
+        ls.streak_end as last_checkin
+      FROM habit_list h
+      LEFT JOIN latest_streak ls ON ls.habit_id = h.id
+      LEFT JOIN longest_streak lg ON lg.habit_id = h.id
+      ORDER BY current_streak DESC NULLS LAST, h.name
     `;
 
 		return result;

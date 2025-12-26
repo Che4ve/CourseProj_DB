@@ -20,11 +20,13 @@ async function applyMigration(filename: string) {
 	const checksum = crypto.createHash("sha256").update(content).digest("hex");
 
 	// Проверяем, применялась ли миграция
-	const existing = await prisma.$queryRaw<Array<{ name: string }>>`
-    SELECT name FROM _manual_migrations WHERE name = ${filename}
+	const existing = await prisma.$queryRaw<
+		Array<{ name: string; checksum: string | null }>
+	>`
+    SELECT name, checksum FROM _manual_migrations WHERE name = ${filename}
   `;
 
-	if (existing.length > 0) {
+	if (existing.length > 0 && existing[0]?.checksum === checksum) {
 		console.log(`⏭${filename} already applied`);
 		return;
 	}
@@ -46,12 +48,25 @@ async function applyMigration(filename: string) {
 		const executionTime = Date.now() - startTime;
 
 		// Записываем в таблицу миграций через Prisma (ПАРАМЕТРИЗОВАННЫЙ запрос)
-		await prisma.$executeRaw`
-      INSERT INTO _manual_migrations (name, checksum, execution_time_ms, applied_by)
-      VALUES (${filename}, ${checksum}, ${executionTime}, 'system')
-    `;
+		if (existing.length > 0) {
+			await prisma.$executeRaw`
+        UPDATE _manual_migrations
+        SET checksum = ${checksum},
+            execution_time_ms = ${executionTime},
+            applied_at = NOW(),
+            applied_by = 'system',
+            status = 'success'
+        WHERE name = ${filename}
+      `;
+		} else {
+			await prisma.$executeRaw`
+        INSERT INTO _manual_migrations (name, checksum, execution_time_ms, applied_by)
+        VALUES (${filename}, ${checksum}, ${executionTime}, 'system')
+      `;
+		}
 
-		console.log(`${filename} applied in ${executionTime}ms`);
+		const suffix = existing.length > 0 ? "re-applied" : "applied";
+		console.log(`${filename} ${suffix} in ${executionTime}ms`);
 	} finally {
 		await client.end();
 	}

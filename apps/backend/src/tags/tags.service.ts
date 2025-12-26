@@ -3,7 +3,7 @@ import {
 	NotFoundException,
 	BadRequestException,
 } from "@nestjs/common";
-import type { Prisma } from "@repo/db";
+import { Prisma } from "@repo/db";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateTagDto } from "./dto/create-tag.dto";
 import { UpdateTagDto } from "./dto/update-tag.dto";
@@ -165,10 +165,34 @@ export class TagsService {
 			return [];
 		}
 
-		const tags = await this.prisma.tag.findMany({
-			where: { id: { in: allIds } },
-			orderBy: { name: "asc" },
-		});
+		const allIdsSql = allIds.map((id) => Prisma.sql`${id}::uuid`);
+
+		const tags = await this.prisma.$queryRaw<
+			Array<{
+				id: string;
+				name: string;
+				slug: string;
+				color: string;
+				usageCount: number;
+				isSystem: boolean;
+				createdAt: Date;
+			}>
+		>(Prisma.sql`
+      SELECT
+        t.id,
+        t.name,
+        t.slug,
+        t.color,
+        t.is_system as "isSystem",
+        t.created_at as "createdAt",
+        COALESCE(v.usage_count, 0)::int as "usageCount"
+      FROM tags t
+      LEFT JOIN v_tag_usage v
+        ON v.tag_id = t.id
+        AND v.user_id = ${userId}::uuid
+      WHERE t.id IN (${Prisma.join(allIdsSql)})
+      ORDER BY t.name ASC
+    `);
 
 		return tags.map((tag) => ({
 			...tag,

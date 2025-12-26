@@ -99,6 +99,14 @@ export interface UserProfile {
   themePreference: number;
 }
 
+export interface UserSummary {
+  totalHabits: number;
+  goodHabits: number;
+  badHabits: number;
+  totalCheckins: number;
+  lastActivity?: string | null;
+}
+
 export interface UserProfileResponse {
   id: string;
   email: string;
@@ -107,4 +115,5 @@ export interface UserProfileResponse {
   isActive: boolean;
   createdAt: string;
   profile: UserProfile | null;
+  summary?: UserSummary;
 }
